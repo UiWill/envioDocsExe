@@ -1,0 +1,40 @@
+{
+  "appId": "com.contabilidade.enviodocs",
+  "productName": "EnvioDocs",
+  "directories": {
+    "output": "dist"
+  },
+  "files": [
+    "build/**/*",
+    "main.js",
+    "preload.js",
+    "package.json",
+    "assets/**/*"
+  ],
+  "win": {
+    "target": [
+      "nsis"
+    ],
+    "icon": "assets/icon.ico"
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "EnvioDocs"
+  },
+  "mac": {
+    "target": [
+      "dmg"
+    ],
+    "icon": "assets/icon.icns"
+  },
+  "linux": {
+    "target": [
+      "AppImage"
+    ],
+    "icon": "assets/icon.png",
+    "category": "Office"
+  }
+} 

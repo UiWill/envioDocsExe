@@ -1,0 +1,44 @@
+Tabela Clientes
+Armazena informações dos clientes das contabilidades.
+| Coluna | Tipo | Descrição |
+|--------|------|-----------|
+| id | SERIAL (PK) | Identificador único do cliente |
+| NOME_CLIENTE | TEXT | Nome do cliente |
+| CNPJ | TEXT | CNPJ completo do cliente |
+| CNPJ_CONTABILIDADE | TEXT | CNPJ da contabilidade associada ao cliente |
+| CNPJ_curto | TEXT | 6 primeiros dígitos do CNPJ do cliente |
+| email | TEXT | Email do cliente (geralmente formado pelo CNPJ + @gmail.com) |
+| NOTFICACAO | TEXT | Status de notificação geral ('0' ou '1') |
+| NOTIFICACAOPRIV | TEXT | Status de notificação privada (valor pode ser o próprio CNPJ_curto) |
+| uid | TEXT | ID do usuário no sistema de autenticação |
+| ADM | TEXT | Indica se o cliente é um administrador ("ADM") |
+
+
+
+Tabela AmContabilidade
+Armazena informações dos documentos processados e dados extraídos dos clientes das contabilidades.
+| Coluna | Tipo | Descrição |
+|------------------|-------------------------------|--------------------------------------------------------------------------|
+| id | BIGINT (PK) | Identificador único do registro |
+| created_at | TIMESTAMP WITH TIME ZONE | Data e hora de criação do registro |
+| URL_PDF | TEXT | URL pública do PDF armazenado |
+| DATA_ARQ | TEXT | Data extraída do documento (formato DD/MM/AAAA) |
+| STATUS | TEXT | Status do documento (ex:sempre colocar  'N' quando for colocar na tabela apenas os clientes mudam esse STATUS no app .) |
+| HASH | TEXT | Hash SHA256 do arquivo PDF (usado para evitar duplicidade) |
+| NOME_PDF | TEXT | Tipo ou nome do documento PDF (ex: DARF, FGTS, HOLERITE, etc.) |
+| VALOR_PFD | TEXT | Valor extraído do documento (em reais, pode estar como texto) |
+| CNPJ_CURTO | TEXT | 6 primeiros dígitos do CNPJ do cliente |
+| CNPJ_CLIENTE | TEXT | CNPJ completo do cliente |
+| NOME_CLIENTE | TEXT | Nome do cliente extraído do documento
+
+STORAGE: PDFs
+O bucket PDFs é um armazenamento do Supabase (Storage Bucket) utilizado para guardar todos os arquivos PDF processados pelo sistema.
+Função:
+Armazenar de forma centralizada e segura todos os documentos PDF enviados e processados pela aplicação.
+Fluxo de uso:
+O arquivo PDF é enviado para o sistema (via API ou upload manual).
+O sistema faz o upload desse arquivo para o bucket PDFs.
+Após o upload, o Supabase gera uma URL pública para o arquivo.
+Essa URL é então salva na tabela AmContabilidade (coluna URL_PDF), permitindo que o documento seja acessado facilmente no futuro.
+Permissão:
+O bucket está configurado como Public, ou seja, qualquer pessoa com a URL pode acessar o arquivo PDF.

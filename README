@@ -1,0 +1,60 @@
+📌 1. Contexto e Objetivo
+Aplicação: Cliente desktop executável (Windows).
+
+Público-alvo: Contabilidades parceiras.
+
+Objetivo principal:
+
+Permitir que o usuário (contabilidade) faça login.
+
+Apresentar um “explorador de pastas” customizado para drag-n-drop de PDFs.
+
+Processar cada PDF arrastado, extrair dados-chave e armazenar tudo num banco Supabase + Storage.
+
+Em caso de falha na extração de algum dado, exibir formulário para preenchimento manual.
+
+📦 2. Funcionalidades Principais
+
+ 2.1 Tela de Login  
+- Autenticação via Supabase Auth.   
+- Exibe nome da contabilidade ao logar.
+
+2.2 “Explorador” de PDFs  
+- Layout idêntico ao Windows Explorer.  
+- Suporta drag-n-drop e copiar/colar.
+
+2.3 Processamento Automático  
+Para cada PDF adicionado:
+1 Extrair:
+   DATA_ARQ (DD/MM/AAAA)  
+   VALOR_PFD (valor em reais)  
+   CNPJ_CLIENTE (completo)  
+   NOME_CLIENTE  
+   NOME_PDF (tipo do documento: ex. DARF, FGTS, HOLERITE…)  
+Derivado: CNPJ_CURTO (6 primeiros dígitos de CNPJ_CLIENTE)  
+2 Calcular HASH SHA-256 para não duplicar registros.  
+. Definir STATUS = 'N' .
+
+🛠 3. Requisitos Técnicos
+Linguagem/Stack: (a melhor para entregar um bom projeto )
+
+Banco de Dados: Supabase
+URL: https://osnjsgleardkzrnddlgt.supabase.co
+
+anon key:
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9zbmpzZ2xlYXJka3pybmRkbGd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjgzMTk3MTAsImV4cCI6MjA0Mzg5NTcxMH0.vsSkmzA6PGG09Kxsj1HAuHFhz-JxwimrtPCPV3E_aLg
+
+service_role key (para operações privilegiadas, ex.: leitura de Storage, RPCs):
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9zbmpzZ2xlYXJka3pybmRkbGd0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTcyODMxOTcxMCwiZXhwIjoyMDQzODk1NzEwfQ.rkabGlHPV4E9aefwyq9LYeXX-QxgfcleCQoqrZ-mgbM
+
+
+Storage: Supabase Storage (bucket PDFs, permissões públicas)
+
+OCR/Parser PDF: (ex: pdf-lib, Tesseract, API de NLP, etc.)
+
+para ver a estrutura da tabela do bando de dados olhe o arquivo (EstrutuaDoSupabase.txt)
+
+🔄 Exemplo de Prompt Final (com NOME_PDF)
+“Crie um app desktop  com tela de login via Supabase Auth. Após login, exiba uma UI estilo Explorer para arrastar/colar PDFs. Cada PDF deve ser processado automaticamente por um parser/OCR que extrai DATA_ARQ, VALOR_PFD, CNPJ_CLIENTE, NOME_CLIENTE e NOME_PDF (tipo do documento, ex.: DARF, FGTS, HOLERITE), calcula CNPJ_CURTO (6 dígitos) e HASH SHA256. Em seguida, faça upload do PDF ao bucket público PDFs do Supabase e salve todos os campos na tabela AmContabilidade (incluindo URL_PDF retornada). Se algum campo não for extraído, abra um modal de preenchimento manual antes de enviar. Mantenha um painel de logs mostrando sucesso e pendências.”
+
+

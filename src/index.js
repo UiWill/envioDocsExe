@@ -1,0 +1,1 @@
+// O conteúdo será movido para src/main.jsx, o arquivo src/index.js será removido após a cópia. 

@@ -1,0 +1,214 @@
+.log-panel {
+  background-color: var(--white-color);
+  border-radius: 8px;
+  box-shadow: var(--shadow-sm);
+  height: 100%;
+  max-height: calc(100vh - 120px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.log-header {
+  padding: 10px 15px;
+  background-color: var(--light-color);
+  border-bottom: 1px solid var(--gray-light-color);
+}
+
+.log-header h3 {
+  margin-bottom: 10px;
+  color: var(--dark-color);
+  font-size: 16px;
+}
+
+.log-filters {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.filter-button {
+  padding: 5px 10px;
+  font-size: 12px;
+  background-color: var(--white-color);
+  border: 1px solid var(--gray-light-color);
+  border-radius: var(--border-radius);
+  cursor: pointer;
+}
+
+.filter-button.active {
+  background-color: var(--primary-color);
+  color: var(--white-color);
+  border-color: var(--primary-color);
+}
+
+.logs-container {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 10px;
+  max-height: calc(100vh - 200px);
+}
+
+.empty-logs {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--gray-color);
+  font-style: italic;
+  text-align: center;
+  padding: 20px;
+}
+
+.logs-list {
+  list-style: none;
+}
+
+.log-entry {
+  padding: 10px;
+  margin-bottom: 8px;
+  border-radius: var(--border-radius);
+  background-color: var(--light-color);
+  font-size: 13px;
+  position: relative;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.log-info {
+  border-left: 3px solid var(--primary-color);
+}
+
+.log-success {
+  border-left: 3px solid var(--success-color);
+}
+
+.log-warning {
+  border-left: 3px solid var(--warning-color);
+}
+
+.log-error {
+  border-left: 3px solid var(--danger-color);
+}
+
+.log-time {
+  font-size: 11px;
+  color: var(--gray-color);
+  margin-bottom: 5px;
+}
+
+.log-badge {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: bold;
+  text-transform: uppercase;
+  margin-right: 6px;
+}
+
+.log-info .log-badge {
+  background-color: rgba(0, 86, 179, 0.1);
+  color: var(--primary-color);
+}
+
+.log-success .log-badge {
+  background-color: rgba(40, 167, 69, 0.1);
+  color: var(--success-color);
+}
+
+.log-warning .log-badge {
+  background-color: rgba(255, 193, 7, 0.1);
+  color: var(--warning-color);
+}
+
+.log-error .log-badge {
+  background-color: rgba(220, 53, 69, 0.1);
+  color: var(--danger-color);
+}
+
+.log-message {
+  flex: 1;
+  min-width: 200px;
+}
+
+.log-details-toggle {
+  display: block;
+  margin-top: 5px;
+  padding: 2px 8px;
+  font-size: 10px;
+  background-color: var(--white-color);
+  border: 1px solid var(--gray-light-color);
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.log-details {
+  margin-top: 8px;
+  padding: 8px;
+  background-color: var(--white-color);
+  border-radius: 4px;
+  font-size: 12px;
+  display: none;
+  overflow: auto;
+  max-height: 150px;
+}
+
+.log-entry.expanded .log-details {
+  display: block;
+}
+
+.log-details table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.log-details td {
+  padding: 3px 6px;
+  border-bottom: 1px solid var(--gray-light-color);
+}
+
+.detail-key {
+  font-weight: bold;
+  width: 40%;
+}
+
+.detail-value {
+  word-break: break-word;
+}
+
+/* Botões de ação nos logs */
+.log-action-button {
+  padding: 4px 8px;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.8em;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-left: 8px;
+}
+
+.log-action-button.warning {
+  background: #ff9800;
+  color: white;
+}
+
+.log-action-button.warning:hover {
+  background: #f57c00;
+  transform: scale(1.05);
+}
+
+.log-action-button.error {
+  background: #f44336;
+  color: white;
+}
+
+.log-action-button.error:hover {
+  background: #d32f2f;
+  transform: scale(1.05);
+} 

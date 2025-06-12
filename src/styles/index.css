@@ -1,0 +1,158 @@
+/* Reset e base global */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  /* Cores da marca EnvioDocs */
+  --primary-color: #FF6B35;        /* Laranja vibrante da logo */
+  --secondary-color: #FF8C42;      /* Laranja mais claro */
+  --accent-color: #2C3E50;         /* Azul escuro da logo */
+  --dark-color: #1A252F;           /* Azul muito escuro */
+  --light-color: #F8F9FA;          /* Cinza muito claro */
+  --white-color: #FFFFFF;          /* Branco puro */
+  --gray-color: #6C757D;           /* Cinza médio */
+  --gray-light-color: #DEE2E6;     /* Cinza claro */
+  
+  /* Cores de status */
+  --success-color: #28A745;        /* Verde sucesso */
+  --warning-color: #FFC107;        /* Amarelo aviso */
+  --danger-color: #DC3545;         /* Vermelho erro */
+  --info-color: #17A2B8;           /* Azul informação */
+  
+  /* Gradientes da marca */
+  --gradient-primary: linear-gradient(135deg, #FF6B35 0%, #FF8C42 100%);
+  --gradient-dark: linear-gradient(135deg, #2C3E50 0%, #1A252F 100%);
+  --gradient-light: linear-gradient(135deg, #F8F9FA 0%, #E9ECEF 100%);
+  
+  /* Sombras */
+  --shadow-sm: 0 2px 4px rgba(255, 107, 53, 0.1);
+  --shadow-md: 0 4px 8px rgba(255, 107, 53, 0.15);
+  --shadow-lg: 0 8px 24px rgba(255, 107, 53, 0.2);
+  
+  /* Outros */
+  --border-radius: 6px;
+  --transition: all 0.3s ease;
+  
+  --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+  font-family: var(--font-family);
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--dark-color);
+  background-color: var(--gray-light-color);
+  height: 100vh;
+  overflow: hidden;
+}
+
+#root {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Utility classes */
+.text-center {
+  text-align: center;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.text-primary {
+  color: var(--primary-color);
+}
+
+.text-success {
+  color: var(--success-color);
+}
+
+.text-warning {
+  color: var(--warning-color);
+}
+
+.text-danger {
+  color: var(--danger-color);
+}
+
+/* Buttons */
+button {
+  cursor: pointer;
+  border: none;
+  border-radius: var(--border-radius);
+  padding: 8px 16px;
+  font-family: var(--font-family);
+  font-size: 14px;
+  transition: all 0.2s ease;
+  background-color: var(--light-color);
+  color: var(--dark-color);
+}
+
+button:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background-color: var(--primary-color);
+  color: var(--white-color);
+}
+
+.btn-success {
+  background-color: var(--success-color);
+  color: var(--white-color);
+}
+
+.btn-warning {
+  background-color: var(--warning-color);
+  color: var(--dark-color);
+}
+
+.btn-danger {
+  background-color: var(--danger-color);
+  color: var(--white-color);
+}
+
+/* Form controls */
+input, select, textarea {
+  font-family: var(--font-family);
+  font-size: 14px;
+  border: 1px solid var(--gray-color);
+  border-radius: var(--border-radius);
+  padding: 8px 12px;
+  width: 100%;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(0, 86, 179, 0.25);
+}
+
+/* Animations */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-in {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.fade-in {
+  animation: fade-in 0.3s ease forwards;
+}
+
+.slide-in {
+  animation: slide-in 0.3s ease forwards;
+} 
