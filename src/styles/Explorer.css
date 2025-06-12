@@ -112,10 +112,10 @@
 }
 
 .drop-message .pdf-icon {
-  width: 64px;
-  height: 64px;
+  font-size: 64px;
   margin-bottom: 16px;
   opacity: 0.7;
+  line-height: 1;
 }
 
 .drop-message p {

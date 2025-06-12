@@ -528,7 +528,7 @@ const Explorer = ({ user }) => {
               </div>
             ) : (
               <>
-                <img src="/assets/pdf-icon.svg" alt="PDF Icon" className="pdf-icon" />
+                <div className="pdf-icon">📄</div>
                 <p>Arraste e solte arquivos PDF aqui</p>
                 <p className="drop-subtitle">Sistema de processamento automático por IA</p>
                 {files.length > 0 && (
