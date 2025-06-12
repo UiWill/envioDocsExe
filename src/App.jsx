@@ -15,7 +15,7 @@ const App = () => {
     <div className="app-container">
       <header className="app-header">
         <div className="logo">
-          <img src="./assets/IMG/imagem.png" alt="EnvioDocs" />
+          <div className="logo-icon">📄</div>
           <h1>EnvioDocs</h1>
         </div>
       </header>
@@ -29,7 +29,7 @@ const App = () => {
       </main>
       
       <footer className="app-footer">
-        <p>&copy; 2023 EnvioDocs - Sistema de Contabilidade</p>
+        <p>&copy; 2025 EnvioDocs - Sistema de Processamento de Documentos</p>
       </footer>
     </div>
   );
