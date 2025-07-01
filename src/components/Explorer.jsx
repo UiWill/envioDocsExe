@@ -286,11 +286,44 @@ const Explorer = ({ user }) => {
             data: result.data
           }]);
         }
+      } else if (result.error && result.error.includes('já foi enviado anteriormente')) {
+        // DUPLICATA: Documento já existe no sistema
+        addLog({
+          type: 'info',
+          message: `📋 ${fileToProcess.name} - Documento já foi enviado anteriormente (duplicata).`,
+          timestamp: new Date(),
+          data: result.data,
+          isDuplicate: true
+        });
+        
+        if (existingFileIndex !== -1) {
+          // Atualiza arquivo existente
+          setFiles(prev => prev.map(file => 
+            file.name === fileToProcess.name 
+              ? { 
+                  name: fileToProcess.name, 
+                  status: 'duplicate',
+                  data: result.data,
+                  error: 'Documento já enviado anteriormente',
+                  isDuplicate: true
+                }
+              : file
+          ));
+        } else {
+          // Adiciona novo arquivo à lista como duplicata
+          setFiles(prev => [...prev, { 
+            name: fileToProcess.name, 
+            status: 'duplicate',
+            data: result.data,
+            error: 'Documento já enviado anteriormente',
+            isDuplicate: true
+          }]);
+        }
       } else if (result.needsManualInput || (result.data && Object.keys(result.data).length > 0)) {
-        // Se precisa de input manual OU se tem dados extraídos (mesmo incompletos)
+        // CORREÇÃO MANUAL: Dados incompletos que precisam ser corrigidos
         addLog({
           type: 'warning',
-          message: `Arquivo ${fileToProcess.name} requer preenchimento manual. Clique para corrigir.`,
+          message: `⚠️ ${fileToProcess.name} requer preenchimento manual. Clique para corrigir.`,
           timestamp: new Date(),
           data: result.data,
           fileData: {
@@ -334,9 +367,10 @@ const Explorer = ({ user }) => {
           }]);
         }
       } else {
+        // ERRO: Falha técnica no processamento
         addLog({
           type: 'error',
-          message: `Erro ao processar ${fileToProcess.name}: ${result.error}. Clique para tentar novamente.`,
+          message: `❌ Erro ao processar ${fileToProcess.name}: ${result.error}. Clique para tentar novamente.`,
           timestamp: new Date(),
           fileName: fileToProcess.name,
           fileData: fileToProcess
@@ -416,20 +450,23 @@ const Explorer = ({ user }) => {
     const essentialTypes = [
       'success',           // Logs de sucesso VERDADEIRO (todos os dados completos)
       'warning',           // Logs de correção manual (dados incompletos)
-      'error'              // Logs de erro (falha no processamento)
+      'error',             // Logs de erro (falha no processamento)
+      'info'               // Logs informativos (incluindo duplicatas)
     ];
     
     // Logs específicos de informação que queremos manter
     const essentialInfoMessages = [
       'arquivo(s) adicionado(s) à fila',
       'Interface limpa. Pronto para novos arquivos.',
-      'Processamento concluído! Fila vazia'
+      'Processamento concluído! Fila vazia',
+      'já foi enviado anteriormente'  // Duplicatas
     ];
     
     // Verificar se é um log essencial
     const isEssential = essentialTypes.includes(logEntry.type) || 
                        (logEntry.type === 'info' && 
-                        essentialInfoMessages.some(msg => logEntry.message.includes(msg)));
+                        essentialInfoMessages.some(msg => logEntry.message.includes(msg))) ||
+                       logEntry.isDuplicate; // Sempre incluir duplicatas
     
     if (isEssential) {
       setLogs(prev => [...prev, logEntry]);
@@ -654,6 +691,7 @@ const Explorer = ({ user }) => {
                       {file.status === 'success' && '✅ Processado'}
                       {file.status === 'warning' && '⚠️ Requer Correção'}
                       {file.status === 'error' && '❌ Erro'}
+                      {file.status === 'duplicate' && '📋 Já Enviado'}
                     </span>
                     {file.needsCorrection && (
                       <div className="file-actions">
@@ -686,7 +724,7 @@ const Explorer = ({ user }) => {
                         ⚙️ Reprocessando...
                       </span>
                     )}
-                    {(file.canRetry || file.status === 'error') && (
+                    {(file.canRetry || file.status === 'error') && file.status !== 'duplicate' && (
                       <div className="file-actions">
                         <button 
                           className="file-action-btn warning"

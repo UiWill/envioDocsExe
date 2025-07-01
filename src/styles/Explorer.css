@@ -245,6 +245,11 @@
   background: #ffebee;
 }
 
+.file-item.file-duplicate {
+  border-left: 4px solid #2196f3;
+  background: rgba(33, 150, 243, 0.08);
+}
+
 .file-name {
   font-weight: 500;
   color: var(--dark-color);
@@ -266,6 +271,11 @@
 
 .file-error .file-status {
   color: var(--danger-color);
+}
+
+.file-duplicate .file-status {
+  color: #2196f3;
+  font-weight: 600;
 }
 
 /* Adicionar estilos para funcionalidades de processamento em lote */
