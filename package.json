@@ -38,6 +38,7 @@
     "crypto-browserify": "^3.12.1",
     "electron": "^28.0.0",
     "electron-icon-builder": "^2.0.1",
+    "gh-pages": "^6.3.0",
     "stream-browserify": "^3.0.0",
     "util": "^0.12.5",
     "vite": "^6.3.4"
