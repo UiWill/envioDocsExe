@@ -704,7 +704,30 @@ const Explorer = ({ user }) => {
                               log.fileData
                             );
                             if (logEntry) {
+                              console.log('Abrindo correção - logEntry encontrado:', logEntry);
+                              console.log('Dados do arquivo no log:', logEntry.fileData);
                               handleEditFile(logEntry.fileData);
+                            } else {
+                              // Fallback: usar dados do arquivo na lista se não encontrar no log
+                              console.log('Log entry não encontrado, usando dados do arquivo da lista');
+                              const fileDataFallback = {
+                                name: file.name,
+                                result: {
+                                  success: false,
+                                  needsManualInput: true,
+                                  data: file.data || {
+                                    DATA_ARQ: '',
+                                    VALOR_PFD: '',
+                                    CNPJ_CLIENTE: '',
+                                    NOME_CLIENTE: '',
+                                    NOME_PDF: '',
+                                    CNPJ_CURTO: '',
+                                    HASH: '',
+                                    STATUS: 'N'
+                                  }
+                                }
+                              };
+                              handleEditFile(fileDataFallback);
                             }
                           }}
                         >

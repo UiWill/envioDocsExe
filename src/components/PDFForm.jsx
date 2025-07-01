@@ -8,15 +8,31 @@ const PDFForm = ({ fileData, onSubmit, onCancel }) => {
   // Verificar estrutura de dados recebida
   console.log('PDFForm - Dados recebidos:', JSON.stringify(fileData, null, 2));
   
-  // Acessar os dados de forma segura
+  // Acessar os dados de forma mais robusta - pode vir em diferentes estruturas
   const { result } = fileData || {};
-  const extractedData = result?.data || {};
+  let extractedData = result?.data || {};
+  
+  // Se não encontrou dados em result.data, tenta outras possibilidades
+  if (!extractedData || Object.keys(extractedData).length === 0) {
+    // Verifica se os dados estão diretamente no fileData
+    if (fileData && fileData.DATA_ARQ) {
+      extractedData = fileData;
+    }
+    // Verifica se os dados estão em fileData.data
+    else if (fileData?.data && typeof fileData.data === 'object') {
+      extractedData = fileData.data;
+    }
+  }
+  
   const missingFields = result?.missingFields || {};
   
   // Debug para verificar se os dados estão estruturados corretamente
-  console.log('PDFForm - extractedData:', extractedData);
+  console.log('PDFForm - extractedData final:', extractedData);
   console.log('PDFForm - Valor da data:', extractedData.DATA_ARQ);
   console.log('PDFForm - Valor do CNPJ:', extractedData.CNPJ_CLIENTE);
+  console.log('PDFForm - Nome do cliente:', extractedData.NOME_CLIENTE);
+  console.log('PDFForm - Valor:', extractedData.VALOR_PFD);
+  console.log('PDFForm - Nome PDF:', extractedData.NOME_PDF);
   
   // Inicialização do state garantindo valores iniciais corretos
   const [formData, setFormData] = useState({
@@ -34,23 +50,38 @@ const PDFForm = ({ fileData, onSubmit, onCancel }) => {
   
   // Efeito para atualizar o formulário quando recebermos novos dados
   useEffect(() => {
+    // Reprocessa os dados sempre que fileData mudar
+    const { result } = fileData || {};
+    let newExtractedData = result?.data || {};
+    
+    // Se não encontrou dados em result.data, tenta outras possibilidades
+    if (!newExtractedData || Object.keys(newExtractedData).length === 0) {
+      if (fileData && fileData.DATA_ARQ) {
+        newExtractedData = fileData;
+      } else if (fileData?.data && typeof fileData.data === 'object') {
+        newExtractedData = fileData.data;
+      }
+    }
+    
+    console.log('PDFForm - useEffect - Atualizando dados:', newExtractedData);
+    
     // Este efeito garante que os dados sejam atualizados se o componente
     // for remontado com dados diferentes
     setFormData({
-      DATA_ARQ: extractedData.DATA_ARQ || '',
-      VALOR_PFD: extractedData.VALOR_PFD || '',
-      CNPJ_CLIENTE: extractedData.CNPJ_CLIENTE || '',
-      NOME_CLIENTE: extractedData.NOME_CLIENTE || '',
-      NOME_PDF: extractedData.NOME_PDF || '',
-      HASH: extractedData.HASH || '',
-      CNPJ_CURTO: extractedData.CNPJ_CURTO || '',
+      DATA_ARQ: newExtractedData.DATA_ARQ || '',
+      VALOR_PFD: newExtractedData.VALOR_PFD || '',
+      CNPJ_CLIENTE: newExtractedData.CNPJ_CLIENTE || '',
+      NOME_CLIENTE: newExtractedData.NOME_CLIENTE || '',
+      NOME_PDF: newExtractedData.NOME_PDF || '',
+      HASH: newExtractedData.HASH || '',
+      CNPJ_CURTO: newExtractedData.CNPJ_CURTO || '',
     });
     
     // Atualizamos o status de validação do cliente
-    if (extractedData.CNPJ_CLIENTE && extractedData.CNPJ_CLIENTE.length > 14) {
+    if (newExtractedData.CNPJ_CLIENTE && newExtractedData.CNPJ_CLIENTE.length > 14) {
       setClientValidated(true);
     }
-  }, [extractedData]); // Dependência do efeito
+  }, [fileData]); // Dependência do efeito mudou para fileData completo
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
