@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { saveManualData, validateClient } from '../utils/fileManager';
 import { saveNewDocumentType } from '../utils/pdfProcessor';
+import PDFViewer from './PDFViewer';
 import '../styles/PDFForm.css';
 
 const PDFForm = ({ fileData, onSubmit, onCancel }) => {
@@ -58,6 +59,7 @@ const PDFForm = ({ fileData, onSubmit, onCancel }) => {
   const [newDocumentKeywords, setNewDocumentKeywords] = useState('');
   const [customDocType, setCustomDocType] = useState('');
   const [showCustomInput, setShowCustomInput] = useState(false);
+  const [showPDFViewer, setShowPDFViewer] = useState(false);
   
   // Verifica e preenche o CNPJ_CURTO se o CNPJ_CLIENTE estiver presente
   useEffect(() => {
@@ -277,7 +279,19 @@ const PDFForm = ({ fileData, onSubmit, onCancel }) => {
         
         <div className="pdf-form-content">
           <div className="file-info">
-            <strong>Arquivo:</strong> {fileData.name}
+            <div className="file-info-header">
+              <div>
+                <strong>Arquivo:</strong> {fileData.name}
+              </div>
+              <button
+                type="button"
+                className="view-pdf-button"
+                onClick={() => setShowPDFViewer(true)}
+                title="Visualizar documento PDF"
+              >
+                👁️ Visualizar PDF
+              </button>
+            </div>
           </div>
           
           {error && <div className="error-message">{error}</div>}
@@ -469,6 +483,15 @@ const PDFForm = ({ fileData, onSubmit, onCancel }) => {
             </div>
           </form>
         </div>
+        
+        {/* Visualizador de PDF */}
+        {showPDFViewer && (
+          <PDFViewer
+            pdfData={fileData.data}
+            fileName={fileData.name}
+            onClose={() => setShowPDFViewer(false)}
+          />
+        )}
       </div>
     </div>
   );

@@ -167,7 +167,6 @@ export const processPDF = async (pdfData, fileName = '') => {
       console.log('🎯 Dados extraídos pela IA:', extractedData);
       
       // Verificar se todos os campos necessários foram extraídos
-      // Para documentos com CNPJ mascarado, permitir sucesso parcial
       const hasMainData = extractedData.NOME_CLIENTE && 
                          extractedData.DATA_ARQ && 
                          extractedData.VALOR_PFD && 
@@ -179,9 +178,12 @@ export const processPDF = async (pdfData, fileName = '') => {
       const isHonorarios = extractedData.NOME_PDF === 'HONORARIOS';
       const isHonorariosComplete = isHonorarios && hasMainData;
       
-      // Considerar sucesso se tiver dados principais (mesmo com CNPJ vazio para mascarados)
-      const isSuccess = hasCompleteData || isHonorariosComplete || hasMainData;
-      const needsManualInput = !hasCompleteData && !isHonorariosComplete;
+      // SUCESSO VERDADEIRO: apenas quando tiver TODOS os dados obrigatórios
+      // ou for HONORARIOS completo (que pode não ter CNPJ)
+      const isSuccess = hasCompleteData || isHonorariosComplete;
+      
+      // Precisa de input manual se não tiver todos os dados obrigatórios
+      const needsManualInput = !isSuccess;
       
       // Preparar dados para salvar
       const result = {

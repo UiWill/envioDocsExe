@@ -17,10 +17,22 @@ const Explorer = ({ user }) => {
   const dropAreaRef = useRef(null);
   const processingTimeoutRef = useRef(null);
   
+  // Constante para limite máximo de documentos por lote
+  const MAX_DOCUMENTS_PER_BATCH = 20;
+  
   useEffect(() => {
     // Processa a fila de arquivos um por um
     if (processingQueue.length > 0 && !processing) {
       processNextFile();
+    }
+    
+    // Log quando a fila está vazia e pronta para novos documentos
+    if (processingQueue.length === 0 && !processing && files.length > 0) {
+      addLog({
+        type: 'success',
+        message: `🎉 Processamento concluído! Fila vazia - pronto para processar até ${MAX_DOCUMENTS_PER_BATCH} novos documentos.`,
+        timestamp: new Date()
+      });
     }
   }, [processingQueue, processing]);
 
@@ -45,13 +57,88 @@ const Explorer = ({ user }) => {
 
   const handleFilePathsSelected = async (fileList) => {
     const newFiles = [];
+    const pdfFiles = fileList.filter(item => {
+      if (typeof item === 'string') {
+        return item.toLowerCase().endsWith('.pdf');
+      } else if (item instanceof File) {
+        return item.name.toLowerCase().endsWith('.pdf');
+      }
+      return false;
+    });
 
+    // Verificar limite de documentos
+    const currentQueueSize = processingQueue.length;
+    const totalDocuments = currentQueueSize + pdfFiles.length;
+    
+    if (totalDocuments > MAX_DOCUMENTS_PER_BATCH) {
+      const allowedFiles = MAX_DOCUMENTS_PER_BATCH - currentQueueSize;
+      const rejectedFiles = pdfFiles.length - allowedFiles;
+      
+      addLog({
+        type: 'warning',
+        message: `⚠️ LIMITE ATINGIDO: Máximo de ${MAX_DOCUMENTS_PER_BATCH} documentos por lote.`,
+        timestamp: new Date()
+      });
+      
+      addLog({
+        type: 'warning',
+        message: `📊 Você tentou adicionar ${pdfFiles.length} arquivos, mas já existem ${currentQueueSize} na fila.`,
+        timestamp: new Date()
+      });
+      
+      if (allowedFiles > 0) {
+        addLog({
+          type: 'info',
+          message: `✅ Processando apenas os primeiros ${allowedFiles} arquivos. ${rejectedFiles} arquivos foram ignorados.`,
+          timestamp: new Date()
+        });
+        
+        addLog({
+          type: 'info',
+          message: `💡 Dica: Aguarde o processamento atual terminar antes de adicionar mais documentos.`,
+          timestamp: new Date()
+        });
+        
+        // Processa apenas os arquivos permitidos
+        const allowedFileList = pdfFiles.slice(0, allowedFiles);
+        await processFileList(allowedFileList, newFiles);
+      } else {
+        addLog({
+          type: 'error',
+          message: `❌ Nenhum arquivo foi adicionado. Aguarde o processamento atual terminar.`,
+          timestamp: new Date()
+        });
+        return;
+      }
+    } else {
+      // Processa todos os arquivos normalmente
+      await processFileList(pdfFiles, newFiles);
+    }
+
+    if (newFiles.length > 0) {
+      setProcessingQueue(prev => [...prev, ...newFiles]);
+      addLog({
+        type: 'success',
+        message: `📁 ${newFiles.length} arquivo(s) adicionado(s) à fila de processamento.`,
+        timestamp: new Date()
+      });
+      
+      addLog({
+        type: 'info',
+        message: `🔄 Total na fila: ${processingQueue.length + newFiles.length} documentos.`,
+        timestamp: new Date()
+      });
+    }
+  };
+
+  // Função auxiliar para processar lista de arquivos
+  const processFileList = async (fileList, newFiles) => {
     for (const item of fileList) {
       if (typeof item === 'string' && item.toLowerCase().endsWith('.pdf')) {
         try {
           addLog({
             type: 'info',
-            message: `Carregando arquivo ${item}...`,
+            message: `📂 Carregando arquivo ${item}...`,
             timestamp: new Date()
           });
           
@@ -59,8 +146,8 @@ const Explorer = ({ user }) => {
           if (fileData) {
             newFiles.push(fileData);
             addLog({
-              type: 'info',
-              message: `Arquivo ${item} carregado com sucesso.`,
+              type: 'success',
+              message: `✅ Arquivo ${item} carregado com sucesso.`,
               timestamp: new Date()
             });
           }
@@ -68,7 +155,7 @@ const Explorer = ({ user }) => {
           console.error('Erro ao ler arquivo:', error);
           addLog({
             type: 'error',
-            message: `Erro ao ler arquivo ${item}: ${error.message}`,
+            message: `❌ Erro ao ler arquivo ${item}: ${error.message}`,
             timestamp: new Date()
           });
         }
@@ -77,7 +164,7 @@ const Explorer = ({ user }) => {
         try {
           addLog({
             type: 'info',
-            message: `Carregando arquivo ${item.name}...`,
+            message: `📂 Carregando arquivo ${item.name}...`,
             timestamp: new Date()
           });
           
@@ -91,28 +178,19 @@ const Explorer = ({ user }) => {
           newFiles.push({ name: item.name, data: base64, path: item.name });
           
           addLog({
-            type: 'info',
-            message: `Arquivo ${item.name} carregado com sucesso.`,
+            type: 'success',
+            message: `✅ Arquivo ${item.name} carregado com sucesso.`,
             timestamp: new Date()
           });
         } catch (error) {
           console.error('Erro ao ler arquivo:', error);
           addLog({
             type: 'error',
-            message: `Erro ao ler arquivo ${item.name}: ${error.message}`,
+            message: `❌ Erro ao ler arquivo ${item.name}: ${error.message}`,
             timestamp: new Date()
           });
         }
       }
-    }
-
-    if (newFiles.length > 0) {
-      setProcessingQueue(prev => [...prev, ...newFiles]);
-      addLog({
-        type: 'info',
-        message: `${newFiles.length} arquivo(s) adicionado(s) à fila.`,
-        timestamp: new Date()
-      });
     }
   };
 
@@ -336,14 +414,16 @@ const Explorer = ({ user }) => {
   const addLog = (logEntry) => {
     // Filtrar apenas logs essenciais
     const essentialTypes = [
-      'success',           // Logs de sucesso
-      'warning',           // Logs de correção manual
+      'success',           // Logs de sucesso VERDADEIRO (todos os dados completos)
+      'warning',           // Logs de correção manual (dados incompletos)
+      'error'              // Logs de erro (falha no processamento)
     ];
     
     // Logs específicos de informação que queremos manter
     const essentialInfoMessages = [
       'arquivo(s) adicionado(s) à fila',
-      'Interface limpa. Pronto para novos arquivos.'
+      'Interface limpa. Pronto para novos arquivos.',
+      'Processamento concluído! Fila vazia'
     ];
     
     // Verificar se é um log essencial
@@ -475,6 +555,16 @@ const Explorer = ({ user }) => {
             🗑️ Limpar Logs e Arquivos
           </button>
           <div className="queue-status">
+            <div className="batch-limit-info">
+              <span className="limit-indicator">
+                📊 Limite: {processingQueue.length}/{MAX_DOCUMENTS_PER_BATCH} documentos por lote
+              </span>
+              {processingQueue.length >= MAX_DOCUMENTS_PER_BATCH && (
+                <span className="limit-warning">
+                  ⚠️ Limite atingido
+                </span>
+              )}
+            </div>
             {processingQueue.length > 0 && (
               <span className="queue-info">
                 📄 {processingQueue.length} arquivo(s) na fila
@@ -531,6 +621,14 @@ const Explorer = ({ user }) => {
                 <div className="pdf-icon">📄</div>
                 <p>Arraste e solte arquivos PDF aqui</p>
                 <p className="drop-subtitle">Sistema de processamento automático por IA</p>
+                <p className="batch-limit-notice">
+                  📋 Máximo de {MAX_DOCUMENTS_PER_BATCH} documentos por lote
+                </p>
+                {processingQueue.length >= MAX_DOCUMENTS_PER_BATCH && (
+                  <p className="limit-reached-warning">
+                    ⚠️ Limite de {MAX_DOCUMENTS_PER_BATCH} documentos atingido. Aguarde o processamento terminar.
+                  </p>
+                )}
                 {files.length > 0 && (
                   <>
                     <p className="files-processed">

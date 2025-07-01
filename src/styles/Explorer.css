@@ -450,4 +450,60 @@
   border-color: var(--primary-color);
   background: linear-gradient(135deg, var(--white-color) 0%, rgba(255, 107, 53, 0.03) 100%);
   box-shadow: 0 4px 12px rgba(255, 107, 53, 0.15);
-} 
+}
+
+/* Estilos para limite de lote */
+.batch-limit-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.limit-indicator {
+  background: linear-gradient(135deg, rgba(0, 123, 255, 0.1) 0%, rgba(0, 86, 179, 0.05) 100%);
+  color: #0056b3;
+  padding: 6px 12px;
+  border-radius: 18px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid rgba(0, 123, 255, 0.2);
+  box-shadow: var(--shadow-sm);
+}
+
+.limit-warning {
+  background: linear-gradient(135deg, rgba(255, 193, 7, 0.2) 0%, rgba(255, 160, 0, 0.1) 100%);
+  color: #856404;
+  padding: 4px 10px;
+  border-radius: 15px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid rgba(255, 193, 7, 0.4);
+  animation: pulse 2s infinite;
+  box-shadow: var(--shadow-sm);
+}
+
+.batch-limit-notice {
+  font-size: 13px !important;
+  color: #0056b3 !important;
+  margin: 8px 0 !important;
+  font-weight: 500;
+  background: rgba(0, 123, 255, 0.05);
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(0, 123, 255, 0.15);
+}
+
+.limit-reached-warning {
+  font-size: 14px !important;
+  color: #856404 !important;
+  margin: 12px 0 !important;
+  font-weight: 600;
+  background: linear-gradient(135deg, rgba(255, 193, 7, 0.15) 0%, rgba(255, 160, 0, 0.08) 100%);
+  padding: 12px 20px;
+  border-radius: 25px;
+  border: 1px solid rgba(255, 193, 7, 0.3);
+  animation: pulse 2s infinite;
+  box-shadow: 0 2px 8px rgba(255, 193, 7, 0.2);
+}
