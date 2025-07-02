@@ -6,68 +6,88 @@ import '../styles/PDFForm.css';
 
 const PDFForm = ({ fileData, onSubmit, onCancel }) => {
   // Verificar estrutura de dados recebida
-  console.log('PDFForm - Dados recebidos:', JSON.stringify(fileData, null, 2));
+  console.log('🎯 PDFForm - Dados recebidos:', JSON.stringify(fileData, null, 2));
+  console.log('🎯 PDFForm - fileData type:', typeof fileData);
+  console.log('🎯 PDFForm - fileData keys:', Object.keys(fileData || {}));
   
   // Acessar os dados de forma mais robusta - pode vir em diferentes estruturas
   const { result } = fileData || {};
   let extractedData = result?.data || {};
   
+  console.log('🔍 PDFForm - result:', result);
+  console.log('🔍 PDFForm - result.data:', result?.data);
+  
   // Se não encontrou dados em result.data, tenta outras possibilidades
   if (!extractedData || Object.keys(extractedData).length === 0) {
+    console.log('⚠️ PDFForm - Dados não encontrados em result.data, tentando outras estruturas...');
+    
     // Verifica se os dados estão diretamente no fileData
     if (fileData && fileData.DATA_ARQ) {
+      console.log('✅ PDFForm - Dados encontrados diretamente no fileData');
       extractedData = fileData;
     }
     // Verifica se os dados estão em fileData.data
     else if (fileData?.data && typeof fileData.data === 'object') {
+      console.log('✅ PDFForm - Dados encontrados em fileData.data');
       extractedData = fileData.data;
     }
+    else {
+      console.log('❌ PDFForm - Nenhum dado encontrado em nenhuma estrutura');
+    }
+  } else {
+    console.log('✅ PDFForm - Dados encontrados em result.data');
   }
   
   const missingFields = result?.missingFields || {};
   
   // Debug para verificar se os dados estão estruturados corretamente
-  console.log('PDFForm - extractedData final:', extractedData);
-  console.log('PDFForm - Valor da data:', extractedData.DATA_ARQ);
-  console.log('PDFForm - Valor do CNPJ:', extractedData.CNPJ_CLIENTE);
-  console.log('PDFForm - Nome do cliente:', extractedData.NOME_CLIENTE);
-  console.log('PDFForm - Valor:', extractedData.VALOR_PFD);
-  console.log('PDFForm - Nome PDF:', extractedData.NOME_PDF);
+  console.log('🎯 PDFForm - extractedData final:', extractedData);
+  console.log('📋 PDFForm - Campos extraídos:');
+  console.log('  - DATA_ARQ:', extractedData.DATA_ARQ);
+  console.log('  - CNPJ_CLIENTE:', extractedData.CNPJ_CLIENTE);
+  console.log('  - NOME_CLIENTE:', extractedData.NOME_CLIENTE);
+  console.log('  - VALOR_PFD:', extractedData.VALOR_PFD);
+  console.log('  - NOME_PDF:', extractedData.NOME_PDF);
   
-  // Inicialização do state garantindo valores iniciais corretos
+  // Inicialização do state - SEMPRE vazio inicialmente
   const [formData, setFormData] = useState({
-    DATA_ARQ: extractedData.DATA_ARQ || '',
-    VALOR_PFD: extractedData.VALOR_PFD || '',
-    CNPJ_CLIENTE: extractedData.CNPJ_CLIENTE || '',
-    NOME_CLIENTE: extractedData.NOME_CLIENTE || '',
-    NOME_PDF: extractedData.NOME_PDF || '',
-    HASH: extractedData.HASH || '',
-    CNPJ_CURTO: extractedData.CNPJ_CURTO || '',
+    DATA_ARQ: '',
+    VALOR_PFD: '',
+    CNPJ_CLIENTE: '',
+    NOME_CLIENTE: '',
+    NOME_PDF: '',
+    HASH: '',
+    CNPJ_CURTO: '',
   });
   
   // Debug do estado inicial do formulário
-  console.log('PDFForm - Estado inicial do formulário:', formData);
+  console.log('🎯 PDFForm - Estado inicial do formulário:', formData);
   
   // Efeito para atualizar o formulário quando recebermos novos dados
   useEffect(() => {
+    console.log('🔄 PDFForm - useEffect executado');
+    console.log('🔄 PDFForm - fileData no useEffect:', fileData);
+    
     // Reprocessa os dados sempre que fileData mudar
     const { result } = fileData || {};
     let newExtractedData = result?.data || {};
     
     // Se não encontrou dados em result.data, tenta outras possibilidades
     if (!newExtractedData || Object.keys(newExtractedData).length === 0) {
+      console.log('🔄 PDFForm - useEffect - Tentando outras estruturas...');
       if (fileData && fileData.DATA_ARQ) {
+        console.log('🔄 PDFForm - useEffect - Usando fileData direto');
         newExtractedData = fileData;
       } else if (fileData?.data && typeof fileData.data === 'object') {
+        console.log('🔄 PDFForm - useEffect - Usando fileData.data');
         newExtractedData = fileData.data;
       }
     }
     
-    console.log('PDFForm - useEffect - Atualizando dados:', newExtractedData);
+    console.log('🔄 PDFForm - useEffect - Dados para atualizar:', newExtractedData);
     
-    // Este efeito garante que os dados sejam atualizados se o componente
-    // for remontado com dados diferentes
-    setFormData({
+    // FORÇAR atualização do formulário
+    const newFormData = {
       DATA_ARQ: newExtractedData.DATA_ARQ || '',
       VALOR_PFD: newExtractedData.VALOR_PFD || '',
       CNPJ_CLIENTE: newExtractedData.CNPJ_CLIENTE || '',
@@ -75,7 +95,10 @@ const PDFForm = ({ fileData, onSubmit, onCancel }) => {
       NOME_PDF: newExtractedData.NOME_PDF || '',
       HASH: newExtractedData.HASH || '',
       CNPJ_CURTO: newExtractedData.CNPJ_CURTO || '',
-    });
+    };
+    
+    console.log('🔄 PDFForm - useEffect - Novo formData:', newFormData);
+    setFormData(newFormData);
     
     // Atualizamos o status de validação do cliente
     if (newExtractedData.CNPJ_CLIENTE && newExtractedData.CNPJ_CLIENTE.length > 14) {

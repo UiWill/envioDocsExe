@@ -698,24 +698,46 @@ const Explorer = ({ user }) => {
                         <button 
                           className="file-action-btn warning"
                           onClick={() => {
+                            console.log('🔧 Clicou em Corrigir para arquivo:', file.name);
+                            console.log('🔧 Dados do arquivo na lista:', file);
+                            console.log('🔧 file.data:', file.data);
+                            
+                            // PRIORIDADE 1: Usar dados do arquivo na lista (mais confiável)
+                            if (file.data && Object.keys(file.data).length > 0) {
+                              console.log('✅ Usando dados do arquivo na lista');
+                              const fileDataFromList = {
+                                name: file.name,
+                                result: {
+                                  success: false,
+                                  needsManualInput: true,
+                                  data: file.data
+                                }
+                              };
+                              console.log('📋 Dados estruturados para enviar ao formulário:', fileDataFromList);
+                              handleEditFile(fileDataFromList);
+                              return;
+                            }
+                            
+                            // PRIORIDADE 2: Buscar no log como fallback
                             const logEntry = logs.find(log => 
                               log.type === 'warning' && 
                               log.message.includes(file.name) &&
                               log.fileData
                             );
                             if (logEntry) {
+                              console.log('📋 Usando dados do log como fallback');
                               console.log('Abrindo correção - logEntry encontrado:', logEntry);
                               console.log('Dados do arquivo no log:', logEntry.fileData);
                               handleEditFile(logEntry.fileData);
                             } else {
-                              // Fallback: usar dados do arquivo na lista se não encontrar no log
-                              console.log('Log entry não encontrado, usando dados do arquivo da lista');
-                              const fileDataFallback = {
+                              // PRIORIDADE 3: Dados vazios como último recurso
+                              console.log('⚠️ Nenhum dado encontrado, criando estrutura vazia');
+                              const fileDataEmpty = {
                                 name: file.name,
                                 result: {
                                   success: false,
                                   needsManualInput: true,
-                                  data: file.data || {
+                                  data: {
                                     DATA_ARQ: '',
                                     VALOR_PFD: '',
                                     CNPJ_CLIENTE: '',
@@ -727,7 +749,7 @@ const Explorer = ({ user }) => {
                                   }
                                 }
                               };
-                              handleEditFile(fileDataFallback);
+                              handleEditFile(fileDataEmpty);
                             }
                           }}
                         >
