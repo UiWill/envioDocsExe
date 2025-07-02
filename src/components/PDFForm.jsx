@@ -5,106 +5,94 @@ import PDFViewer from './PDFViewer';
 import '../styles/PDFForm.css';
 
 const PDFForm = ({ fileData, onSubmit, onCancel }) => {
-  // Verificar estrutura de dados recebida
-  console.log('🎯 PDFForm - Dados recebidos:', JSON.stringify(fileData, null, 2));
-  console.log('🎯 PDFForm - fileData type:', typeof fileData);
-  console.log('🎯 PDFForm - fileData keys:', Object.keys(fileData || {}));
+  console.log('🆕 PDFForm NOVA LÓGICA - Iniciando componente');
+  console.log('🆕 PDFForm NOVA LÓGICA - fileData recebido:', fileData);
   
-  // Acessar os dados de forma mais robusta - pode vir em diferentes estruturas
-  const { result } = fileData || {};
-  let extractedData = result?.data || {};
-  
-  console.log('🔍 PDFForm - result:', result);
-  console.log('🔍 PDFForm - result.data:', result?.data);
-  
-  // Se não encontrou dados em result.data, tenta outras possibilidades
-  if (!extractedData || Object.keys(extractedData).length === 0) {
-    console.log('⚠️ PDFForm - Dados não encontrados em result.data, tentando outras estruturas...');
+  // FUNÇÃO SIMPLIFICADA para extrair dados
+  const extractDataFromFileData = (fileData) => {
+    // PRIORIDADE 1: extractedData (nova estrutura)
+    if (fileData?.extractedData && typeof fileData.extractedData === 'object') {
+      console.log('✅ PDFForm - Usando extractedData:', fileData.extractedData);
+      return fileData.extractedData;
+    }
     
-    // Verifica se os dados estão diretamente no fileData
-    if (fileData && fileData.DATA_ARQ) {
-      console.log('✅ PDFForm - Dados encontrados diretamente no fileData');
-      extractedData = fileData;
+    // PRIORIDADE 2: result.data
+    if (fileData?.result?.data && typeof fileData.result.data === 'object') {
+      console.log('✅ PDFForm - Usando result.data:', fileData.result.data);
+      return fileData.result.data;
     }
-    // Verifica se os dados estão em fileData.data
-    else if (fileData?.data && typeof fileData.data === 'object') {
-      console.log('✅ PDFForm - Dados encontrados em fileData.data');
-      extractedData = fileData.data;
-    }
-    else {
-      console.log('❌ PDFForm - Nenhum dado encontrado em nenhuma estrutura');
-    }
-  } else {
-    console.log('✅ PDFForm - Dados encontrados em result.data');
+    
+    // FALLBACK: Dados vazios
+    console.log('❌ PDFForm - Usando dados vazios (fallback)');
+    return {
+      NOME_CLIENTE: '',
+      DATA_ARQ: '',
+      VALOR_PFD: '',
+      CNPJ_CLIENTE: '',
+      NOME_PDF: '',
+      HASH: '',
+      CNPJ_CURTO: '',
+      STATUS: 'N'
+    };
+  };
+  
+  const extractedData = extractDataFromFileData(fileData);
+  
+  // Garantir que o nome do arquivo seja preenchido
+  if (!extractedData.NOME_PDF && fileData?.name) {
+    extractedData.NOME_PDF = fileData.name.replace('.pdf', '').toUpperCase();
   }
   
-  const missingFields = result?.missingFields || {};
+  const missingFields = fileData?.result?.missingFields || {};
   
-  // Debug para verificar se os dados estão estruturados corretamente
-  console.log('🎯 PDFForm - extractedData final:', extractedData);
-  console.log('📋 PDFForm - Campos extraídos:');
-  console.log('  - DATA_ARQ:', extractedData.DATA_ARQ);
-  console.log('  - CNPJ_CLIENTE:', extractedData.CNPJ_CLIENTE);
-  console.log('  - NOME_CLIENTE:', extractedData.NOME_CLIENTE);
-  console.log('  - VALOR_PFD:', extractedData.VALOR_PFD);
-  console.log('  - NOME_PDF:', extractedData.NOME_PDF);
+  console.log('🎯 PDFForm - Dados extraídos final:', extractedData);
   
-  // Inicialização do state - SEMPRE vazio inicialmente
+  // Inicialização do state com dados extraídos
   const [formData, setFormData] = useState({
-    DATA_ARQ: '',
-    VALOR_PFD: '',
-    CNPJ_CLIENTE: '',
-    NOME_CLIENTE: '',
-    NOME_PDF: '',
-    HASH: '',
-    CNPJ_CURTO: '',
+    DATA_ARQ: extractedData.DATA_ARQ || '',
+    VALOR_PFD: extractedData.VALOR_PFD || '',
+    CNPJ_CLIENTE: extractedData.CNPJ_CLIENTE || '',
+    NOME_CLIENTE: extractedData.NOME_CLIENTE || '',
+    NOME_PDF: extractedData.NOME_PDF || '',
+    HASH: extractedData.HASH || '',
+    CNPJ_CURTO: extractedData.CNPJ_CURTO || '',
   });
   
-  // Debug do estado inicial do formulário
-  console.log('🎯 PDFForm - Estado inicial do formulário:', formData);
+  console.log('✅ PDFForm - Estado inicial do formulário:', formData);
   
-  // Efeito para atualizar o formulário quando recebermos novos dados
+  // EFEITO SIMPLIFICADO para atualizar formulário
   useEffect(() => {
-    console.log('🔄 PDFForm - useEffect executado');
-    console.log('🔄 PDFForm - fileData no useEffect:', fileData);
+    console.log('🆕 PDFForm NOVA LÓGICA - useEffect executado');
+    console.log('🆕 PDFForm NOVA LÓGICA - fileData recebido:', fileData);
     
-    // Reprocessa os dados sempre que fileData mudar
-    const { result } = fileData || {};
-    let newExtractedData = result?.data || {};
+    // Extrair dados usando a nova função
+    const dadosExtraidos = extractDataFromFileData(fileData);
     
-    // Se não encontrou dados em result.data, tenta outras possibilidades
-    if (!newExtractedData || Object.keys(newExtractedData).length === 0) {
-      console.log('🔄 PDFForm - useEffect - Tentando outras estruturas...');
-      if (fileData && fileData.DATA_ARQ) {
-        console.log('🔄 PDFForm - useEffect - Usando fileData direto');
-        newExtractedData = fileData;
-      } else if (fileData?.data && typeof fileData.data === 'object') {
-        console.log('🔄 PDFForm - useEffect - Usando fileData.data');
-        newExtractedData = fileData.data;
-      }
+    // Garantir que o nome do arquivo seja preenchido
+    if (!dadosExtraidos.NOME_PDF && fileData?.name) {
+      dadosExtraidos.NOME_PDF = fileData.name.replace('.pdf', '').toUpperCase();
     }
     
-    console.log('🔄 PDFForm - useEffect - Dados para atualizar:', newExtractedData);
+    console.log('🎯 PDFForm NOVA LÓGICA - Dados extraídos final:', dadosExtraidos);
     
-    // FORÇAR atualização do formulário
-    const newFormData = {
-      DATA_ARQ: newExtractedData.DATA_ARQ || '',
-      VALOR_PFD: newExtractedData.VALOR_PFD || '',
-      CNPJ_CLIENTE: newExtractedData.CNPJ_CLIENTE || '',
-      NOME_CLIENTE: newExtractedData.NOME_CLIENTE || '',
-      NOME_PDF: newExtractedData.NOME_PDF || '',
-      HASH: newExtractedData.HASH || '',
-      CNPJ_CURTO: newExtractedData.CNPJ_CURTO || '',
-    };
+    // Atualizar formulário diretamente
+    setFormData({
+      DATA_ARQ: dadosExtraidos.DATA_ARQ,
+      VALOR_PFD: dadosExtraidos.VALOR_PFD,
+      CNPJ_CLIENTE: dadosExtraidos.CNPJ_CLIENTE,
+      NOME_CLIENTE: dadosExtraidos.NOME_CLIENTE,
+      NOME_PDF: dadosExtraidos.NOME_PDF,
+      HASH: dadosExtraidos.HASH,
+      CNPJ_CURTO: dadosExtraidos.CNPJ_CURTO,
+    });
     
-    console.log('🔄 PDFForm - useEffect - Novo formData:', newFormData);
-    setFormData(newFormData);
+    console.log('✅ PDFForm NOVA LÓGICA - FormData atualizado!');
     
-    // Atualizamos o status de validação do cliente
-    if (newExtractedData.CNPJ_CLIENTE && newExtractedData.CNPJ_CLIENTE.length > 14) {
+    // Validação do CNPJ
+    if (dadosExtraidos.CNPJ_CLIENTE && dadosExtraidos.CNPJ_CLIENTE.length > 14) {
       setClientValidated(true);
     }
-  }, [fileData]); // Dependência do efeito mudou para fileData completo
+  }, [fileData]);
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -342,6 +330,7 @@ const PDFForm = ({ fileData, onSubmit, onCancel }) => {
                 className="view-pdf-button"
                 onClick={() => setShowPDFViewer(true)}
                 title="Visualizar documento PDF"
+                disabled={!fileData.data && !fileData.originalFileData}
               >
                 👁️ Visualizar PDF
               </button>
@@ -541,7 +530,7 @@ const PDFForm = ({ fileData, onSubmit, onCancel }) => {
         {/* Visualizador de PDF */}
         {showPDFViewer && (
           <PDFViewer
-            pdfData={fileData.data}
+            pdfData={fileData.originalFileData || fileData.data}
             fileName={fileData.name}
             onClose={() => setShowPDFViewer(false)}
           />

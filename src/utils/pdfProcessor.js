@@ -172,18 +172,24 @@ export const processPDF = async (pdfData, fileName = '') => {
                          extractedData.VALOR_PFD && 
                          extractedData.NOME_PDF;
       
-      const hasCompleteData = hasMainData && extractedData.CNPJ_CLIENTE;
-      
-      // Para HONORARIOS, CNPJ pode ficar vazio se for pessoa física (CPF)
+      // REGRA CRÍTICA: CNPJ É OBRIGATÓRIO, EXCETO PARA HONORARIOS
       const isHonorarios = extractedData.NOME_PDF === 'HONORARIOS';
-      const isHonorariosComplete = isHonorarios && hasMainData;
+      const hasCNPJ = extractedData.CNPJ_CLIENTE && extractedData.CNPJ_CLIENTE.trim() !== '';
       
-      // SUCESSO VERDADEIRO: apenas quando tiver TODOS os dados obrigatórios
-      // ou for HONORARIOS completo (que pode não ter CNPJ)
-      const isSuccess = hasCompleteData || isHonorariosComplete;
+      // SUCESSO APENAS SE:
+      // 1. Tem todos os dados principais E
+      // 2. Tem CNPJ OU é HONORARIOS (que pode ter CPF)
+      const isSuccess = hasMainData && (hasCNPJ || isHonorarios);
       
-      // Precisa de input manual se não tiver todos os dados obrigatórios
+      // Precisa de input manual se não atender os critérios de sucesso
       const needsManualInput = !isSuccess;
+      
+      console.log('🔍 VALIDAÇÃO CRÍTICA:');
+      console.log('  - hasMainData:', hasMainData);
+      console.log('  - hasCNPJ:', hasCNPJ);
+      console.log('  - isHonorarios:', isHonorarios);
+      console.log('  - isSuccess:', isSuccess);
+      console.log('  - needsManualInput:', needsManualInput);
       
       // Preparar dados para salvar
       const result = {

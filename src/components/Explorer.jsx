@@ -251,6 +251,12 @@ const Explorer = ({ user }) => {
     try {
       const result = await processFile(fileToProcess);
       
+      // LOG CRÍTICO: Verificar o que o processFile está retornando
+      console.log('🚨 PROCESSAMENTO - Resultado retornado pelo processFile:', result);
+      console.log('🚨 PROCESSAMENTO - result.data:', result?.data);
+      console.log('🚨 PROCESSAMENTO - result.success:', result?.success);
+      console.log('🚨 PROCESSAMENTO - result.needsManualInput:', result?.needsManualInput);
+      
       clearInterval(progressInterval);
       clearTimeout(processingTimeoutRef.current);
       setProcessingProgress(100);
@@ -321,50 +327,60 @@ const Explorer = ({ user }) => {
         }
       } else if (result.needsManualInput || (result.data && Object.keys(result.data).length > 0)) {
         // CORREÇÃO MANUAL: Dados incompletos que precisam ser corrigidos
+        console.log('🔍 CRÍTICO - Resultado completo recebido:', result);
+        console.log('🔍 CRÍTICO - result.data:', result.data);
+        console.log('🔍 CRÍTICO - result.data type:', typeof result.data);
+        console.log('🔍 CRÍTICO - result.data keys:', result.data ? Object.keys(result.data) : 'null');
+        
+        // GARANTIR que temos dados para salvar
+        const dadosParaSalvar = result.data || {};
+        console.log('🔍 CRÍTICO - Dados que serão salvos:', dadosParaSalvar);
+        
         addLog({
           type: 'warning',
           message: `⚠️ ${fileToProcess.name} requer preenchimento manual. Clique para corrigir.`,
           timestamp: new Date(),
-          data: result.data,
+          data: dadosParaSalvar,
           fileData: {
             ...fileToProcess,
             result: {
               ...result,
-              needsManualInput: true, // Força como manual input
-              data: {
-                ...result.data,
-                DATA_ARQ: result.data?.DATA_ARQ || '',
-                VALOR_PFD: result.data?.VALOR_PFD || '',
-                CNPJ_CLIENTE: result.data?.CNPJ_CLIENTE || '',
-                NOME_CLIENTE: result.data?.NOME_CLIENTE || '',
-                NOME_PDF: result.data?.NOME_PDF || '',
-                CNPJ_CURTO: result.data?.CNPJ_CURTO || '',
-                HASH: result.data?.HASH || ''
-              }
+              needsManualInput: true,
+              data: dadosParaSalvar
             }
           }
         });
         
         if (existingFileIndex !== -1) {
           // Atualiza arquivo existente
+          const arquivoAtualizado = { 
+            name: fileToProcess.name, 
+            status: 'warning',
+            data: dadosParaSalvar, // Dados extraídos
+            originalFileData: fileToProcess.data, // PDF original
+            extractedData: dadosParaSalvar, // DADOS EXTRAÍDOS SEPARADOS
+            result: result, // Resultado completo
+            needsCorrection: true
+          };
+          console.log('🔍 CRÍTICO - Arquivo que será salvo (update):', arquivoAtualizado);
+          
           setFiles(prev => prev.map(file => 
-            file.name === fileToProcess.name 
-              ? { 
-                  name: fileToProcess.name, 
-                  status: 'warning',
-                  data: result.data,
-                  needsCorrection: true
-                }
-              : file
+            file.name === fileToProcess.name ? arquivoAtualizado : file
           ));
         } else {
           // Adiciona novo arquivo à lista como pendente de correção manual
-          setFiles(prev => [...prev, { 
+          const novoArquivo = { 
             name: fileToProcess.name, 
             status: 'warning',
-            data: result.data,
+            data: dadosParaSalvar, // Dados extraídos  
+            originalFileData: fileToProcess.data, // PDF original
+            extractedData: dadosParaSalvar, // DADOS EXTRAÍDOS SEPARADOS
+            result: result, // Resultado completo
             needsCorrection: true
-          }]);
+          };
+          console.log('🔍 CRÍTICO - Novo arquivo que será salvo:', novoArquivo);
+          
+          setFiles(prev => [...prev, novoArquivo]);
         }
       } else {
         // ERRO: Falha técnica no processamento
@@ -698,60 +714,29 @@ const Explorer = ({ user }) => {
                         <button 
                           className="file-action-btn warning"
                           onClick={() => {
-                            console.log('🔧 Clicou em Corrigir para arquivo:', file.name);
-                            console.log('🔧 Dados do arquivo na lista:', file);
-                            console.log('🔧 file.data:', file.data);
+                            console.log('🔧 NOVA LÓGICA - Clicou em Corrigir para arquivo:', file.name);
+                            console.log('🔧 NOVA LÓGICA - Arquivo completo:', file);
                             
-                            // PRIORIDADE 1: Buscar no log (que sempre funcionou)
-                            const logEntry = logs.find(log => 
-                              log.type === 'warning' && 
-                              log.message.includes(file.name) &&
-                              log.fileData
-                            );
-                            if (logEntry && logEntry.fileData) {
-                              console.log('✅ Usando dados do log (método que sempre funcionou)');
-                              console.log('📋 logEntry encontrado:', logEntry);
-                              console.log('📋 logEntry.fileData:', logEntry.fileData);
-                              handleEditFile(logEntry.fileData);
-                              return;
-                            }
+                            // NOVA LÓGICA SIMPLIFICADA - usar extractedData diretamente
+                            const dadosExtraidos = file.extractedData || file.data || {};
+                            console.log('🎯 DADOS EXTRAÍDOS ENCONTRADOS:', dadosExtraidos);
                             
-                            // PRIORIDADE 2: Usar dados do arquivo na lista 
-                            if (file.data && Object.keys(file.data).length > 0) {
-                              console.log('✅ Usando dados do arquivo na lista');
-                              const fileDataFromList = {
-                                name: file.name,
-                                result: {
-                                  success: false,
-                                  needsManualInput: true,
-                                  data: file.data
-                                }
-                              };
-                              console.log('📋 Dados estruturados para enviar ao formulário:', fileDataFromList);
-                              handleEditFile(fileDataFromList);
-                              return;
-                            }
-                            
-                            // PRIORIDADE 3: Dados vazios como último recurso
-                            console.log('⚠️ Nenhum dado encontrado, criando estrutura vazia');
-                            const fileDataEmpty = {
+                            // Criar estrutura limpa para o formulário
+                            const fileDataParaFormulario = {
                               name: file.name,
+                              originalFileData: file.originalFileData,
+                              // PASSAR OS DADOS EXTRAÍDOS DIRETAMENTE
+                              extractedData: dadosExtraidos,
+                              // Manter compatibilidade com estrutura antiga
                               result: {
                                 success: false,
                                 needsManualInput: true,
-                                data: {
-                                  DATA_ARQ: '',
-                                  VALOR_PFD: '',
-                                  CNPJ_CLIENTE: '',
-                                  NOME_CLIENTE: '',
-                                  NOME_PDF: '',
-                                  CNPJ_CURTO: '',
-                                  HASH: '',
-                                  STATUS: 'N'
-                                }
+                                data: dadosExtraidos
                               }
                             };
-                            handleEditFile(fileDataEmpty);
+                            
+                            console.log('✅ NOVA LÓGICA - Enviando para formulário:', fileDataParaFormulario);
+                            handleEditFile(fileDataParaFormulario);
                           }}
                         >
                           ✏️ Corrigir

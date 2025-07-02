@@ -68,6 +68,30 @@ export const documentosAPI = {
     return { exists: data && data.length > 0, error };
   },
 
+  // Buscar documentos similares por critérios combinados
+  findSimilarDocuments: async (criteria) => {
+    const { data, error } = await supabase
+      .from('AmContabilidade')
+      .select('id, NOME_CLIENTE, DATA_ARQ, VALOR_PFD, NOME_PDF, HASH, created_at')
+      .eq('NOME_CLIENTE', criteria.NOME_CLIENTE)
+      .eq('DATA_ARQ', criteria.DATA_ARQ)
+      .eq('VALOR_PFD', criteria.VALOR_PFD)
+      .eq('NOME_PDF', criteria.NOME_PDF)
+      .order('created_at', { ascending: false })
+      .limit(5); // Limitar a 5 resultados para performance
+    return { data, error };
+  },
+
+  // Buscar documentos por nome do arquivo (adicional)
+  findByFileName: async (fileName) => {
+    const { data, error } = await supabase
+      .from('AmContabilidade')
+      .select('id, NOME_CLIENTE, DATA_ARQ, VALOR_PFD, NOME_PDF, HASH')
+      .like('URL_PDF', `%${fileName}%`)
+      .limit(3);
+    return { data, error };
+  },
+
   // Inserir novo documento
   addDocumento: async (documentoData) => {
     const { data, error } = await supabase
