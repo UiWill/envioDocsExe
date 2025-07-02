@@ -702,7 +702,21 @@ const Explorer = ({ user }) => {
                             console.log('🔧 Dados do arquivo na lista:', file);
                             console.log('🔧 file.data:', file.data);
                             
-                            // PRIORIDADE 1: Usar dados do arquivo na lista (mais confiável)
+                            // PRIORIDADE 1: Buscar no log (que sempre funcionou)
+                            const logEntry = logs.find(log => 
+                              log.type === 'warning' && 
+                              log.message.includes(file.name) &&
+                              log.fileData
+                            );
+                            if (logEntry && logEntry.fileData) {
+                              console.log('✅ Usando dados do log (método que sempre funcionou)');
+                              console.log('📋 logEntry encontrado:', logEntry);
+                              console.log('📋 logEntry.fileData:', logEntry.fileData);
+                              handleEditFile(logEntry.fileData);
+                              return;
+                            }
+                            
+                            // PRIORIDADE 2: Usar dados do arquivo na lista 
                             if (file.data && Object.keys(file.data).length > 0) {
                               console.log('✅ Usando dados do arquivo na lista');
                               const fileDataFromList = {
@@ -718,39 +732,26 @@ const Explorer = ({ user }) => {
                               return;
                             }
                             
-                            // PRIORIDADE 2: Buscar no log como fallback
-                            const logEntry = logs.find(log => 
-                              log.type === 'warning' && 
-                              log.message.includes(file.name) &&
-                              log.fileData
-                            );
-                            if (logEntry) {
-                              console.log('📋 Usando dados do log como fallback');
-                              console.log('Abrindo correção - logEntry encontrado:', logEntry);
-                              console.log('Dados do arquivo no log:', logEntry.fileData);
-                              handleEditFile(logEntry.fileData);
-                            } else {
-                              // PRIORIDADE 3: Dados vazios como último recurso
-                              console.log('⚠️ Nenhum dado encontrado, criando estrutura vazia');
-                              const fileDataEmpty = {
-                                name: file.name,
-                                result: {
-                                  success: false,
-                                  needsManualInput: true,
-                                  data: {
-                                    DATA_ARQ: '',
-                                    VALOR_PFD: '',
-                                    CNPJ_CLIENTE: '',
-                                    NOME_CLIENTE: '',
-                                    NOME_PDF: '',
-                                    CNPJ_CURTO: '',
-                                    HASH: '',
-                                    STATUS: 'N'
-                                  }
+                            // PRIORIDADE 3: Dados vazios como último recurso
+                            console.log('⚠️ Nenhum dado encontrado, criando estrutura vazia');
+                            const fileDataEmpty = {
+                              name: file.name,
+                              result: {
+                                success: false,
+                                needsManualInput: true,
+                                data: {
+                                  DATA_ARQ: '',
+                                  VALOR_PFD: '',
+                                  CNPJ_CLIENTE: '',
+                                  NOME_CLIENTE: '',
+                                  NOME_PDF: '',
+                                  CNPJ_CURTO: '',
+                                  HASH: '',
+                                  STATUS: 'N'
                                 }
-                              };
-                              handleEditFile(fileDataEmpty);
-                            }
+                              }
+                            };
+                            handleEditFile(fileDataEmpty);
                           }}
                         >
                           ✏️ Corrigir
