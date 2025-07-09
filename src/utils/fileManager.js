@@ -2,6 +2,42 @@
 import { processPDF } from './pdfProcessor';
 import { documentosAPI, storageAPI, clientesAPI } from './supabaseClient';
 
+// Função para validar se a data não é menor que a data atual
+const validateDocumentDate = (dateStr) => {
+  try {
+    // Converte a data do documento (DD/MM/YYYY) para objeto Date
+    const [day, month, year] = dateStr.split('/').map(Number);
+    const documentDate = new Date(year, month - 1, day); // mês é 0-based em JS
+    
+    // Remove o horário da data atual para comparar apenas as datas
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Formata as datas para exibição
+    const formatDate = (date) => {
+      const d = date.getDate().toString().padStart(2, '0');
+      const m = (date.getMonth() + 1).toString().padStart(2, '0');
+      const y = date.getFullYear();
+      return `${d}/${m}/${y}`;
+    };
+    
+    // Retorna true se a data do documento é maior ou igual à data atual
+    return {
+      isValid: documentDate >= today,
+      documentDate,
+      today,
+      formattedDocDate: formatDate(documentDate),
+      formattedToday: formatDate(today)
+    };
+  } catch (error) {
+    console.error('❌ Erro ao validar data:', error);
+    return {
+      isValid: false,
+      error: 'Data inválida'
+    };
+  }
+};
+
 // Processa um único arquivo PDF
 export const processFile = async (fileData) => {
   try {
@@ -19,6 +55,26 @@ export const processFile = async (fileData) => {
     // Log de depuração: mostrar texto extraído (apenas para debug)
     if (result && result.rawText !== undefined) {
       console.log('Texto extraído do PDF:', result.rawText);
+    }
+    
+    // NOVA VALIDAÇÃO: Verificar data do documento
+    if (result.data?.DATA_ARQ) {
+      const dateValidation = validateDocumentDate(result.data.DATA_ARQ);
+      if (!dateValidation.isValid) {
+        console.log('⚠️ FILEMANAGER - Data do documento inválida:', {
+          documentDate: dateValidation.documentDate,
+          today: dateValidation.today
+        });
+        
+        return {
+          success: false,
+          fileName: name,
+          filePath: path,
+          error: `⚠️ Data do documento (${dateValidation.formattedDocDate}) é anterior à data atual (${dateValidation.formattedToday}). Por favor, verifique e corrija a data.`,
+          needsManualInput: true,
+          data: result.data
+        };
+      }
     }
     
     // CORREÇÃO: Verificar se é falha completa ou apenas precisa de input manual

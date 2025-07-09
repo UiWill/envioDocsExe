@@ -194,6 +194,15 @@ const Explorer = ({ user }) => {
     }
   };
 
+  // Função para simplificar nome do arquivo
+  const simplifyFileName = (fileName) => {
+    // Se o nome for muito longo, mostra apenas o início
+    if (fileName.length > 30) {
+      return fileName.substring(0, 30) + '...';
+    }
+    return fileName;
+  };
+
   const processNextFile = async () => {
     if (processingQueue.length === 0) return;
     
@@ -202,11 +211,11 @@ const Explorer = ({ user }) => {
     
     const [fileToProcess, ...remainingQueue] = processingQueue;
     setProcessingQueue(remainingQueue);
-    setCurrentProcessingFile(fileToProcess.name);
+    setCurrentProcessingFile(simplifyFileName(fileToProcess.name));
     
     addLog({
       type: 'info',
-      message: `Processando ${fileToProcess.name}...`,
+      message: `Processando ${simplifyFileName(fileToProcess.name)}...`,
       timestamp: new Date()
     });
 
@@ -218,7 +227,7 @@ const Explorer = ({ user }) => {
     processingTimeoutRef.current = setTimeout(() => {
       addLog({
         type: 'error',
-        message: `Processamento de ${fileToProcess.name} excedeu o tempo limite (120s). Abortando.`,
+        message: `Processamento de ${simplifyFileName(fileToProcess.name)} excedeu o tempo limite (120s). Abortando.`,
         timestamp: new Date()
       });
       
@@ -234,7 +243,7 @@ const Explorer = ({ user }) => {
       } else {
         // Adiciona novo arquivo à lista como erro
         setFiles(prev => [...prev, { 
-          name: fileToProcess.name, 
+          name: simplifyFileName(fileToProcess.name), 
           status: 'error',
           error: 'Processamento excedeu o tempo limite'
         }]);
@@ -267,7 +276,7 @@ const Explorer = ({ user }) => {
       if (result.success) {
         addLog({
           type: 'success',
-          message: `Arquivo ${fileToProcess.name} processado com sucesso.`,
+          message: `✅ Arquivo ${simplifyFileName(fileToProcess.name)} processado com sucesso.`,
           timestamp: new Date(),
           data: result.data
         });
@@ -277,68 +286,39 @@ const Explorer = ({ user }) => {
           setFiles(prev => prev.map(file => 
             file.name === fileToProcess.name 
               ? { 
-                  name: fileToProcess.name, 
+                  name: simplifyFileName(fileToProcess.name), 
                   status: 'success',
                   data: result.data,
-                  needsCorrection: false
+                  needsCorrection: false,
+                  fullName: fileToProcess.name
                 }
               : file
           ));
         } else {
           // Adiciona novo arquivo à lista
           setFiles(prev => [...prev, { 
-            name: fileToProcess.name, 
+            name: simplifyFileName(fileToProcess.name), 
             status: 'success',
-            data: result.data
-          }]);
-        }
-      } else if (result.error && result.error.includes('já foi enviado anteriormente')) {
-        // DUPLICATA: Documento já existe no sistema
-        addLog({
-          type: 'info',
-          message: `📋 ${fileToProcess.name} - Documento já foi enviado anteriormente (duplicata).`,
-          timestamp: new Date(),
-          data: result.data,
-          isDuplicate: true
-        });
-        
-        if (existingFileIndex !== -1) {
-          // Atualiza arquivo existente
-          setFiles(prev => prev.map(file => 
-            file.name === fileToProcess.name 
-              ? { 
-                  name: fileToProcess.name, 
-                  status: 'duplicate',
-                  data: result.data,
-                  error: 'Documento já enviado anteriormente',
-                  isDuplicate: true
-                }
-              : file
-          ));
-        } else {
-          // Adiciona novo arquivo à lista como duplicata
-          setFiles(prev => [...prev, { 
-            name: fileToProcess.name, 
-            status: 'duplicate',
             data: result.data,
-            error: 'Documento já enviado anteriormente',
-            isDuplicate: true
+            fullName: fileToProcess.name
           }]);
         }
       } else if (result.needsManualInput || (result.data && Object.keys(result.data).length > 0)) {
         // CORREÇÃO MANUAL: Dados incompletos que precisam ser corrigidos
         console.log('🔍 CRÍTICO - Resultado completo recebido:', result);
-        console.log('🔍 CRÍTICO - result.data:', result.data);
-        console.log('🔍 CRÍTICO - result.data type:', typeof result.data);
-        console.log('🔍 CRÍTICO - result.data keys:', result.data ? Object.keys(result.data) : 'null');
         
         // GARANTIR que temos dados para salvar
         const dadosParaSalvar = result.data || {};
-        console.log('🔍 CRÍTICO - Dados que serão salvos:', dadosParaSalvar);
+        
+        // Criar mensagem de erro mais específica
+        let errorMessage = `⚠️ ${simplifyFileName(fileToProcess.name)} requer correção.`;
+        if (result.error && result.error.includes('Data do documento')) {
+          errorMessage = result.error;
+        }
         
         addLog({
           type: 'warning',
-          message: `⚠️ ${fileToProcess.name} requer preenchimento manual. Clique para corrigir.`,
+          message: errorMessage,
           timestamp: new Date(),
           data: dadosParaSalvar,
           fileData: {
@@ -354,15 +334,16 @@ const Explorer = ({ user }) => {
         if (existingFileIndex !== -1) {
           // Atualiza arquivo existente
           const arquivoAtualizado = { 
-            name: fileToProcess.name, 
+            name: simplifyFileName(fileToProcess.name), 
             status: 'warning',
-            data: dadosParaSalvar, // Dados extraídos
-            originalFileData: fileToProcess.data, // PDF original
-            extractedData: dadosParaSalvar, // DADOS EXTRAÍDOS SEPARADOS
-            result: result, // Resultado completo
-            needsCorrection: true
+            data: dadosParaSalvar,
+            originalFileData: fileToProcess.data,
+            extractedData: dadosParaSalvar,
+            result: result,
+            needsCorrection: true,
+            fullName: fileToProcess.name,
+            error: result.error
           };
-          console.log('🔍 CRÍTICO - Arquivo que será salvo (update):', arquivoAtualizado);
           
           setFiles(prev => prev.map(file => 
             file.name === fileToProcess.name ? arquivoAtualizado : file
@@ -370,15 +351,16 @@ const Explorer = ({ user }) => {
         } else {
           // Adiciona novo arquivo à lista como pendente de correção manual
           const novoArquivo = { 
-            name: fileToProcess.name, 
+            name: simplifyFileName(fileToProcess.name), 
             status: 'warning',
-            data: dadosParaSalvar, // Dados extraídos  
-            originalFileData: fileToProcess.data, // PDF original
-            extractedData: dadosParaSalvar, // DADOS EXTRAÍDOS SEPARADOS
-            result: result, // Resultado completo
-            needsCorrection: true
+            data: dadosParaSalvar,
+            originalFileData: fileToProcess.data,
+            extractedData: dadosParaSalvar,
+            result: result,
+            needsCorrection: true,
+            fullName: fileToProcess.name,
+            error: result.error
           };
-          console.log('🔍 CRÍTICO - Novo arquivo que será salvo:', novoArquivo);
           
           setFiles(prev => [...prev, novoArquivo]);
         }
@@ -386,7 +368,7 @@ const Explorer = ({ user }) => {
         // ERRO: Falha técnica no processamento
         addLog({
           type: 'error',
-          message: `❌ Erro ao processar ${fileToProcess.name}: ${result.error}. Clique para tentar novamente.`,
+          message: `❌ Erro ao processar ${simplifyFileName(fileToProcess.name)}: ${result.error}`,
           timestamp: new Date(),
           fileName: fileToProcess.name,
           fileData: fileToProcess
@@ -397,21 +379,23 @@ const Explorer = ({ user }) => {
           setFiles(prev => prev.map(file => 
             file.name === fileToProcess.name 
               ? { 
-                  ...file, 
+                  name: simplifyFileName(fileToProcess.name),
                   status: 'error',
                   error: result.error,
                   canRetry: true,
-                  needsCorrection: false
+                  needsCorrection: false,
+                  fullName: fileToProcess.name
                 }
               : file
           ));
         } else {
           // Adiciona novo arquivo à lista como erro
           setFiles(prev => [...prev, { 
-            name: fileToProcess.name, 
+            name: simplifyFileName(fileToProcess.name),
             status: 'error',
             error: result.error,
-            canRetry: true
+            canRetry: true,
+            fullName: fileToProcess.name
           }]);
         }
       }
@@ -422,7 +406,7 @@ const Explorer = ({ user }) => {
       console.error('Erro ao processar arquivo:', error);
       addLog({
         type: 'error',
-        message: `Erro ao processar ${fileToProcess.name}: ${error.message}. Clique para tentar novamente.`,
+        message: `Erro ao processar ${simplifyFileName(fileToProcess.name)}: ${error.message}. Clique para tentar novamente.`,
         timestamp: new Date(),
         fileName: fileToProcess.name,
         fileData: fileToProcess
@@ -446,7 +430,7 @@ const Explorer = ({ user }) => {
       } else {
         // Adiciona novo arquivo à lista como erro
         setFiles(prev => [...prev, { 
-          name: fileToProcess.name, 
+          name: simplifyFileName(fileToProcess.name), 
           status: 'error',
           error: error.message,
           canRetry: true
@@ -542,6 +526,13 @@ const Explorer = ({ user }) => {
   };
 
   const handleFormCancel = () => {
+    // Se estiver apenas visualizando, fecha sem mostrar erro
+    if (currentFileData?.isViewing) {
+      setShowManualForm(false);
+      setCurrentFileData(null);
+      return;
+    }
+
     addLog({
       type: 'warning',
       message: `Processamento do arquivo ${currentFileData.name} cancelado pelo usuário.`,
@@ -593,6 +584,124 @@ const Explorer = ({ user }) => {
     console.log('Abrindo formulário para correção manual:', fileData);
     setCurrentFileData(fileData);
     setShowManualForm(true);
+  };
+
+  // Função para corrigir manualmente um arquivo
+  const handleManualCorrection = (file) => {
+    // Se for um documento processado com sucesso ou duplicado, apenas mostra os dados
+    if (file.status === 'success' || file.error?.includes('similar já existe') || file.error?.includes('já foi enviado')) {
+      console.log('Abrindo visualização de dados:', file);
+      setCurrentFileData({
+        ...file,
+        isViewing: true // Flag para indicar que é apenas visualização
+      });
+      setShowManualForm(true);
+      return;
+    }
+
+    // Caso contrário, abre para correção manual
+    console.log('Abrindo formulário para correção manual:', file);
+    setCurrentFileData(file);
+    setShowManualForm(true);
+  };
+
+  // Função para tentar processar novamente um arquivo
+  const handleRetry = (file) => {
+    // Atualiza o status do arquivo para "processando"
+    setFiles(prev => prev.map(f => 
+      f.name === file.name 
+        ? { ...f, status: 'processing', needsCorrection: false }
+        : f
+    ));
+    
+    addLog({
+      type: 'info',
+      message: `Tentando reprocessar arquivo ${file.name} com IA...`,
+      timestamp: new Date()
+    });
+    
+    // Adiciona novamente à fila de processamento
+    setProcessingQueue(prev => [...prev, file]);
+  };
+
+  // Renderiza a lista de arquivos processados
+  const renderProcessedFiles = () => {
+    return (
+      <div className="processed-files">
+        <h3>Arquivos Processados ({files.length})</h3>
+        {files.map((file, index) => {
+          // Verifica se é um documento duplicado
+          const isDuplicate = file.error?.includes('similar já existe') || 
+                            file.error?.includes('já foi enviado');
+          
+          // Define o status visual correto
+          const visualStatus = isDuplicate ? 'duplicate' : file.status;
+          
+          return (
+            <div key={index} className={`file-item ${visualStatus}`}>
+              <div className="file-info">
+                <div className="file-name">
+                  {file.name}
+                </div>
+                <div className="file-status">
+                  {file.status === 'success' && (
+                    <>
+                      <span className="success-icon">✅</span>
+                      <span className="success-message">Processado com Sucesso</span>
+                    </>
+                  )}
+                  {file.status === 'error' && !isDuplicate && (
+                    <>
+                      <span className="error-icon">❌</span>
+                      <span className="error-message">{file.error || 'Erro no processamento'}</span>
+                    </>
+                  )}
+                  {file.status === 'warning' && !isDuplicate && (
+                    <>
+                      <span className="warning-icon">⚠️</span>
+                      <span className="warning-message">{file.error || 'Requer Correção'}</span>
+                    </>
+                  )}
+                  {isDuplicate && (
+                    <>
+                      <span className="duplicate-icon">📋</span>
+                      <span className="duplicate-message">Documento já enviado anteriormente</span>
+                    </>
+                  )}
+                </div>
+              </div>
+              <div className="file-actions">
+                {isDuplicate && (
+                  <button 
+                    className="btn-info"
+                    onClick={() => handleManualCorrection(file)}
+                    title="Visualizar dados do documento"
+                  >
+                    👁️ Visualizar Dados
+                  </button>
+                )}
+                {file.status === 'warning' && !isDuplicate && (
+                  <button 
+                    className="btn-warning"
+                    onClick={() => handleManualCorrection(file)}
+                  >
+                    🔧 Corrigir Manualmente
+                  </button>
+                )}
+                {file.canRetry && !isDuplicate && (
+                  <button 
+                    className="btn-retry"
+                    onClick={() => handleRetry(file)}
+                  >
+                    🔄 Tentar Novamente
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
   };
 
   return (
@@ -698,111 +807,7 @@ const Explorer = ({ user }) => {
           
           {files.length > 0 && (
             <div className="files-list">
-              <h3>Arquivos Processados ({files.length})</h3>
-              <ul>
-                {files.map((file, index) => (
-                  <li key={index} className={`file-item file-${file.status}`}>
-                    <span className="file-name">{file.name}</span>
-                    <span className="file-status">
-                      {file.status === 'success' && '✅ Processado'}
-                      {file.status === 'warning' && '⚠️ Requer Correção'}
-                      {file.status === 'error' && '❌ Erro'}
-                      {file.status === 'duplicate' && '📋 Já Enviado'}
-                    </span>
-                    {file.needsCorrection && (
-                      <div className="file-actions">
-                        <button 
-                          className="file-action-btn warning"
-                          onClick={() => {
-                            console.log('🔧 NOVA LÓGICA - Clicou em Corrigir para arquivo:', file.name);
-                            console.log('🔧 NOVA LÓGICA - Arquivo completo:', file);
-                            
-                            // NOVA LÓGICA SIMPLIFICADA - usar extractedData diretamente
-                            const dadosExtraidos = file.extractedData || file.data || {};
-                            console.log('🎯 DADOS EXTRAÍDOS ENCONTRADOS:', dadosExtraidos);
-                            
-                            // Criar estrutura limpa para o formulário
-                            const fileDataParaFormulario = {
-                              name: file.name,
-                              originalFileData: file.originalFileData,
-                              // PASSAR OS DADOS EXTRAÍDOS DIRETAMENTE
-                              extractedData: dadosExtraidos,
-                              // Manter compatibilidade com estrutura antiga
-                              result: {
-                                success: false,
-                                needsManualInput: true,
-                                data: dadosExtraidos
-                              }
-                            };
-                            
-                            console.log('✅ NOVA LÓGICA - Enviando para formulário:', fileDataParaFormulario);
-                            handleEditFile(fileDataParaFormulario);
-                          }}
-                        >
-                          ✏️ Corrigir
-                        </button>
-                        <button 
-                          className="file-action-btn retry"
-                          onClick={() => handleRetryFile(file.name)}
-                          title="Tentar processar novamente com IA"
-                        >
-                          🔄 Tentar Novamente
-                        </button>
-                      </div>
-                    )}
-                    {file.status === 'processing' && (
-                      <span className="file-status processing">
-                        ⚙️ Reprocessando...
-                      </span>
-                    )}
-                    {(file.canRetry || file.status === 'error') && file.status !== 'duplicate' && (
-                      <div className="file-actions">
-                        <button 
-                          className="file-action-btn warning"
-                          onClick={() => {
-                            // Criar dados básicos para correção manual mesmo em caso de erro
-                            const basicFileData = {
-                              name: file.name,
-                              result: {
-                                success: false,
-                                needsManualInput: true,
-                                data: {
-                                  DATA_ARQ: '',
-                                  VALOR_PFD: '',
-                                  CNPJ_CLIENTE: '',
-                                  NOME_CLIENTE: '',
-                                  NOME_PDF: '',
-                                  CNPJ_CURTO: '',
-                                  HASH: '',
-                                  STATUS: 'N'
-                                },
-                                missingFields: {
-                                  NOME_CLIENTE: true,
-                                  DATA_ARQ: true,
-                                  VALOR_PFD: true,
-                                  CNPJ_CLIENTE: true,
-                                  NOME_PDF: true
-                                }
-                              }
-                            };
-                            handleEditFile(basicFileData);
-                          }}
-                          title="Preencher dados manualmente"
-                        >
-                          ✏️ Corrigir Manualmente
-                        </button>
-                        <button 
-                          className="file-action-btn error"
-                          onClick={() => handleRetryFile(file.name)}
-                          title="Tentar processar novamente com IA"
-                        >
-                          🔄 Tentar Novamente
-                        </button>
-                      </div>
-                    )}
-                  </li>
-                ))}
-              </ul>
+              {renderProcessedFiles()}
             </div>
           )}
         </div>

@@ -279,6 +279,30 @@ const PDFForm = ({ fileData, onSubmit, onCancel }) => {
       return;
     }
     
+    // NOVA VALIDAÇÃO: Verificar data do documento
+    try {
+      const [day, month, year] = formData.DATA_ARQ.split('/').map(Number);
+      const documentDate = new Date(year, month - 1, day);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      // Formata as datas para exibição
+      const formatDate = (date) => {
+        const d = date.getDate().toString().padStart(2, '0');
+        const m = (date.getMonth() + 1).toString().padStart(2, '0');
+        const y = date.getFullYear();
+        return `${d}/${m}/${y}`;
+      };
+      
+      if (documentDate < today) {
+        setError(`⚠️ Data do documento (${formatDate(documentDate)}) é anterior à data atual (${formatDate(today)}). Por favor, verifique e corrija a data.`);
+        return;
+      }
+    } catch (error) {
+      setError('Data inválida. Use o formato DD/MM/YYYY.');
+      return;
+    }
+    
     if (!formData.VALOR_PFD) {
       setError('Valor do documento é obrigatório.');
       return;
