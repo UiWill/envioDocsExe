@@ -99,7 +99,7 @@ export const processPDF = async (pdfData, fileName = '') => {
         
         4. Para NOME_PDF, identifique o tipo baseado nestas características:
            - **PARCELAMENTO**: PRIORIDADE MÁXIMA - Se o nome do arquivo contém "PARCELAMENTO", "PARCELA", "PARCELADO" OU se o conteúdo menciona parcelamento de tributos, USE EXATAMENTE o nome do arquivo SEM a extensão .pdf (ex: se arquivo é "PARCELAMENTO_ICMS.pdf" use "PARCELAMENTO_ICMS", se é "PARCELAMENTO_INCS.pdf" use "PARCELAMENTO_INCS")
-           - DARF: Documento de Arrecadação de Receitas Federais
+           - **DARF**: PRIORIDADE ALTA - Se o documento contém "Documento de Arrecadação de Receitas Federais" OU "DARF" OU se o nome do arquivo contém "DCTFWEB", identifique como "DARF"
            - FGTS: Guia de Recolhimento do FGTS ou GRF Digital
            - DAE: Documento de Arrecadação Estadual
            - PGDAS: Documento do Simples Nacional
