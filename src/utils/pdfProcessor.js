@@ -167,6 +167,21 @@ export const processPDF = async (pdfData, fileName = '') => {
       
       console.log('🎯 Dados extraídos pela IA:', extractedData);
       
+      // Validar e corrigir CNPJ
+      if (extractedData.CNPJ_CLIENTE) {
+        const cnpjNumbers = extractedData.CNPJ_CLIENTE.replace(/\D/g, '');
+        
+        // CNPJ deve ter exatamente 14 dígitos
+        if (cnpjNumbers.length !== 14) {
+          console.log(`⚠️ CNPJ inválido detectado: ${extractedData.CNPJ_CLIENTE} (${cnpjNumbers.length} dígitos) - removendo`);
+          extractedData.CNPJ_CLIENTE = '';
+        } else {
+          // Formatar CNPJ corretamente se válido
+          extractedData.CNPJ_CLIENTE = cnpjNumbers.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
+          console.log(`✅ CNPJ válido formatado: ${extractedData.CNPJ_CLIENTE}`);
+        }
+      }
+      
       // Verificar se todos os campos necessários foram extraídos
       const hasMainData = extractedData.NOME_CLIENTE && 
                          extractedData.DATA_ARQ && 
@@ -218,10 +233,11 @@ export const processPDF = async (pdfData, fileName = '') => {
     } catch (error) {
       console.error(`❌ Erro na tentativa ${attempt}:`, error.message);
       
-      // Se for erro 429 (rate limit) e não for a última tentativa, aguardar e tentar novamente
-      if (error.response?.status === 429 && attempt < MAX_RETRIES) {
+      // Se for erro 429 (rate limit) ou 503 (service unavailable) e não for a última tentativa
+      if ((error.response?.status === 429 || error.response?.status === 503) && attempt < MAX_RETRIES) {
         const delay = INITIAL_DELAY * Math.pow(2, attempt - 1); // Backoff exponencial
-        console.log(`⏳ Rate limit atingido. Aguardando ${delay}ms antes da próxima tentativa...`);
+        const errorType = error.response?.status === 429 ? 'Rate limit' : 'Serviço indisponível';
+        console.log(`⏳ ${errorType} (${error.response?.status}). Aguardando ${delay}ms antes da próxima tentativa...`);
         await new Promise(resolve => setTimeout(resolve, delay));
         continue;
       }

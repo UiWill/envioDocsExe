@@ -5,33 +5,100 @@ const supabaseUrl = 'https://osnjsgleardkzrnddlgt.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9zbmpzZ2xlYXJka3pybmRkbGd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjgzMTk3MTAsImV4cCI6MjA0Mzg5NTcxMH0.vsSkmzA6PGG09Kxsj1HAuHFhz-JxwimrtPCPV3E_aLg';
 const serviceRoleKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9zbmpzZ2xlYXJka3pybmRkbGd0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTcyODMxOTcxMCwiZXhwIjoyMDQzODk1NzEwfQ.rkabGlHPV4E9aefwyq9LYeXX-QxgfcleCQoqrZ-mgbM';
 
-// Cliente público
-export const supabase = createClient(supabaseUrl, supabaseKey);
+// Cliente público com configuração de auto-refresh
+export const supabase = createClient(supabaseUrl, supabaseKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: false
+  }
+});
 
 // Cliente com privilégios elevados (para Storage e RPC)
 export const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
+
+// Listener para mudanças no estado de autenticação
+supabase.auth.onAuthStateChange((event, session) => {
+  if (event === 'TOKEN_REFRESHED') {
+    console.log('🔄 Token do Supabase renovado automaticamente');
+  } else if (event === 'SIGNED_OUT') {
+    console.log('🚪 Usuário desconectado do Supabase');
+  } else if (event === 'INITIAL_SESSION') {
+    console.log('🔐 Sessão inicial carregada');
+  }
+});
+
+// Função para limpar sessão em caso de erro de token
+const clearInvalidSession = async () => {
+  try {
+    await supabase.auth.signOut({ scope: 'local' });
+    localStorage.removeItem('sb-osnjsgleardkzrnddlgt-auth-token');
+    sessionStorage.clear();
+    console.log('🧹 Sessão inválida limpa');
+  } catch (error) {
+    console.error('Erro ao limpar sessão:', error);
+  }
+};
 
 // Funções de autenticação
 export const auth = {
   // Login com email e senha
   login: async (email, password) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    return { data, error };
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      if (error && error.message.includes('refresh token')) {
+        await clearInvalidSession();
+        return { data: null, error: { message: 'Sessão expirada. Por favor, faça login novamente.' } };
+      }
+      
+      return { data, error };
+    } catch (error) {
+      console.error('Erro no login:', error);
+      return { data: null, error };
+    }
   },
 
   // Logout
   logout: async () => {
-    const { error } = await supabase.auth.signOut();
-    return { error };
+    try {
+      const { error } = await supabase.auth.signOut();
+      return { error };
+    } catch (error) {
+      await clearInvalidSession();
+      return { error: null };
+    }
   },
 
   // Obter usuário atual
   getCurrentUser: async () => {
-    const { data, error } = await supabase.auth.getUser();
-    return { user: data?.user, error };
+    try {
+      const { data, error } = await supabase.auth.getUser();
+      
+      if (error && error.message.includes('refresh token')) {
+        await clearInvalidSession();
+        return { user: null, error: { message: 'Sessão expirada' } };
+      }
+      
+      return { user: data?.user, error };
+    } catch (error) {
+      console.error('Erro ao obter usuário:', error);
+      await clearInvalidSession();
+      return { user: null, error };
+    }
+  },
+
+  // Verificar se há uma sessão válida
+  hasValidSession: async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      return !!session;
+    } catch (error) {
+      return false;
+    }
   },
 };
 
