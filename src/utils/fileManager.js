@@ -77,6 +77,19 @@ export const processFile = async (fileData) => {
       }
     }
     
+    // VALIDAÇÃO DO CNPJ: Verificar se houve erro na validação do CNPJ_CURTO
+    if (result.cnpjValidationError) {
+      console.log('❌ PROCESSFILE - Erro na validação do CNPJ:', result.cnpjValidationError);
+      return {
+        success: false,
+        fileName: name,
+        filePath: path,
+        error: result.cnpjValidationError,
+        needsManualInput: true,
+        data: result.data
+      };
+    }
+    
     // CORREÇÃO: Verificar se é falha completa ou apenas precisa de input manual
     if (!result.success && !result.needsManualInput) {
       // Falha completa de processamento
@@ -396,6 +409,36 @@ export const saveManualData = async (fileData, manualData) => {
     }
     
     console.log('✅ SAVEMANUAL - Verificações concluídas, prosseguindo com salvamento...');
+    
+    // VALIDAÇÃO CRÍTICA: Verificar se CNPJ_CURTO existe na tabela Clientes
+    if (manualData.CNPJ_CURTO) {
+      try {
+        console.log('🔍 SAVEMANUAL - Validando CNPJ_CURTO na tabela Clientes:', manualData.CNPJ_CURTO);
+        const { exists, cliente, error } = await clientesAPI.validateCNPJCurto(manualData.CNPJ_CURTO);
+        
+        if (error && !error.message?.includes('No rows found')) {
+          console.error('⚠️ SAVEMANUAL - Erro ao validar CNPJ_CURTO:', error);
+          return {
+            success: false,
+            error: 'Cliente com esse CNPJ não está cadastrado no sistema.'
+          };
+        } else if (!exists) {
+          console.log('❌ SAVEMANUAL - CNPJ_CURTO não encontrado na tabela Clientes:', manualData.CNPJ_CURTO);
+          return {
+            success: false,
+            error: `CNPJ curto ${manualData.CNPJ_CURTO} não encontrado na base de clientes. Verifique se o CNPJ foi preenchido corretamente.`
+          };
+        } else {
+          console.log('✅ SAVEMANUAL - CNPJ_CURTO validado com sucesso:', { cnpjCurto: manualData.CNPJ_CURTO, cliente: cliente?.NOME_RAZAO_SOCIAL });
+        }
+      } catch (error) {
+        console.error('❌ SAVEMANUAL - Falha na validação do CNPJ_CURTO:', error);
+        return {
+          success: false,
+          error: 'Erro interno na validação do cliente. Tente novamente.'
+        };
+      }
+    }
     
     // Adiciona URL e HASH ao objeto de dados
     const documentData = {

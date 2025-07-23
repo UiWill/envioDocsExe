@@ -1,6 +1,6 @@
 import { SHA256 } from 'crypto-js';
 import axios from 'axios';
-import { supabase } from './supabaseClient';
+import { supabase, clientesAPI } from './supabaseClient';
 
 // Calcula o hash SHA-256
 export const calculateHash = (buffer) => {
@@ -207,16 +207,44 @@ export const processPDF = async (pdfData, fileName = '') => {
       console.log('  - isSuccess:', isSuccess);
       console.log('  - needsManualInput:', needsManualInput);
       
+      // Calcular CNPJ_CURTO
+      const cnpjCurto = extractedData.CNPJ_CLIENTE ? 
+        extractedData.CNPJ_CLIENTE.split('').filter(char => '0123456789'.includes(char)).join('').substring(0, 6) : 
+        null;
+      
+      console.log('🔍 PDFPROCESSOR - CNPJ_CLIENTE extraído:', extractedData.CNPJ_CLIENTE);
+      console.log('🔍 PDFPROCESSOR - CNPJ_CURTO calculado:', cnpjCurto, 'tipo:', typeof cnpjCurto);
+      
+      // VALIDAÇÃO CRÍTICA: Verificar se CNPJ_CURTO existe na tabela Clientes
+      let cnpjValidationError = null;
+      if (cnpjCurto && hasCNPJ) {
+        try {
+          console.log('🔍 Validando CNPJ_CURTO na tabela Clientes:', cnpjCurto);
+          const { exists, cliente, error } = await clientesAPI.validateCNPJCurto(cnpjCurto);
+          
+          if (error && !error.message?.includes('No rows found')) {
+            console.error('⚠️ Erro ao validar CNPJ_CURTO:', error);
+            cnpjValidationError = 'Cliente com esse CNPJ não está cadastrado no sistema';
+          } else if (!exists) {
+            console.log('❌ CNPJ_CURTO não encontrado na tabela Clientes:', cnpjCurto);
+            cnpjValidationError = `CNPJ curto ${cnpjCurto} não encontrado na base de clientes. Verifique se o CNPJ foi extraído corretamente.`;
+          } else {
+            console.log('✅ CNPJ_CURTO validado com sucesso:', { cnpjCurto, cliente: cliente?.NOME_RAZAO_SOCIAL });
+          }
+        } catch (error) {
+          console.error('❌ Falha na validação do CNPJ_CURTO:', error);
+          cnpjValidationError = 'Erro interno na validação do cliente';
+        }
+      }
+      
       // Preparar dados para salvar
       const result = {
-        success: isSuccess,
-        needsManualInput: needsManualInput,
+        success: isSuccess && !cnpjValidationError,
+        needsManualInput: needsManualInput || !!cnpjValidationError,
         data: {
           ...extractedData,
           HASH: SHA256(pdfData).toString(),
-          CNPJ_CURTO: extractedData.CNPJ_CLIENTE ? 
-            extractedData.CNPJ_CLIENTE.split('').filter(char => '0123456789'.includes(char)).join('').substring(0, 6) : 
-            null
+          CNPJ_CURTO: cnpjCurto
         },
         missingFields: {
           NOME_CLIENTE: !extractedData.NOME_CLIENTE,
@@ -224,7 +252,8 @@ export const processPDF = async (pdfData, fileName = '') => {
           VALOR_PFD: !extractedData.VALOR_PFD,
           CNPJ_CLIENTE: !extractedData.CNPJ_CLIENTE,
           NOME_PDF: !extractedData.NOME_PDF
-        }
+        },
+        cnpjValidationError: cnpjValidationError
       };
 
       console.log('✨ Resultado final:', result);

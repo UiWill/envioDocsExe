@@ -122,6 +122,76 @@ export const clientesAPI = {
       .eq('CNPJ_CONTABILIDADE', cnpjContabilidade);
     return { clientes: data, error };
   },
+
+  // Validar se CNPJ curto existe na tabela Clientes
+  validateCNPJCurto: async (cnpjCurto) => {
+    try {
+      console.log('🔍 SUPABASE - Testando busca na tabela Clientes');
+      
+      // Primeiro teste: buscar todos os registros para ver se a tabela está acessível
+      const { data: allData, error: allError } = await supabase
+        .from('Clientes')
+        .select('CNPJ_curto')
+        .limit(5);
+      
+      console.log('🔍 SUPABASE - Teste de acesso à tabela:', { allData, allError });
+      
+      if (allError) {
+        console.error('❌ SUPABASE - Erro de acesso à tabela Clientes:', allError);
+        return { 
+          exists: false, 
+          cliente: null, 
+          error: allError 
+        };
+      }
+      
+      console.log('🔍 SUPABASE - Buscando CNPJ_curto:', cnpjCurto, 'tipo:', typeof cnpjCurto);
+      
+      // Garantir que é string e buscar na coluna text
+      const cnpjString = String(cnpjCurto);
+      
+      // Buscar o CNPJ específico
+      const { data, error } = await supabase
+        .from('Clientes')
+        .select('CNPJ_curto')
+        .eq('CNPJ_curto', cnpjString);
+      
+      console.log('🔍 SUPABASE - Resultado da busca específica:', { data, error, cnpjString });
+      
+      if (error) {
+        console.error('❌ SUPABASE - Erro na query específica:', error);
+        return { 
+          exists: false, 
+          cliente: null, 
+          error 
+        };
+      }
+      
+      if (data && data.length > 0) {
+        console.log('✅ SUPABASE - Cliente encontrado:', data[0]);
+        return { 
+          exists: true, 
+          cliente: data[0],
+          error: null 
+        };
+      }
+      
+      console.log('❌ SUPABASE - Cliente não encontrado');
+      return { 
+        exists: false, 
+        cliente: null, 
+        error: null 
+      };
+      
+    } catch (error) {
+      console.error('❌ SUPABASE - Erro ao validar CNPJ curto:', error);
+      return { 
+        exists: false, 
+        cliente: null, 
+        error 
+      };
+    }
+  },
 };
 
 // Funções para manipulação da tabela AmContabilidade
