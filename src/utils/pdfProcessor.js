@@ -89,6 +89,7 @@ export const processPDF = async (pdfData, fileName = '') => {
            - Mantenha a formatação XX.XXX.XXX/XXXX-XX apenas para CNPJs válidos e completos
            - **Para HONORARIOS**: Se houver CNPJ válido no documento (ex: "CNPJ/CPF: 27.894.767/0001-68"), use-o
            - **Para HONORARIOS**: Se só houver CPF, deixe CNPJ_CLIENTE como ""
+           - **Para FGTS - FALLBACK ESPECIAL**: Se não conseguir o CNPJ completo, procure por CNPJ parcial (8 dígitos) no campo "CPF/CNPJ do Empregador" (ex: "41.894.000"). Se encontrar, formate como "XX.XXX.XXX/0001-00" (completando com /0001-00)
            - Para folha de pagamento, use o CNPJ do empregador (se visível)
            - Para documentos fiscais, use o CNPJ do contribuinte/empresa (se visível)
         
@@ -173,8 +174,16 @@ export const processPDF = async (pdfData, fileName = '') => {
         
         // CNPJ deve ter exatamente 14 dígitos
         if (cnpjNumbers.length !== 14) {
-          console.log(`⚠️ CNPJ inválido detectado: ${extractedData.CNPJ_CLIENTE} (${cnpjNumbers.length} dígitos) - removendo`);
-          extractedData.CNPJ_CLIENTE = '';
+          // Verificar se é FGTS e se temos um CNPJ parcial (8 dígitos)
+          if (extractedData.NOME_PDF === 'FGTS' && cnpjNumbers.length === 8) {
+            // Completar CNPJ parcial do FGTS com /0001-00
+            const cnpjCompleto = cnpjNumbers + '000100';
+            extractedData.CNPJ_CLIENTE = cnpjCompleto.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
+            console.log(`✅ FGTS - CNPJ parcial completado: ${cnpjNumbers} -> ${extractedData.CNPJ_CLIENTE}`);
+          } else {
+            console.log(`⚠️ CNPJ inválido detectado: ${extractedData.CNPJ_CLIENTE} (${cnpjNumbers.length} dígitos) - removendo`);
+            extractedData.CNPJ_CLIENTE = '';
+          }
         } else {
           // Formatar CNPJ corretamente se válido
           extractedData.CNPJ_CLIENTE = cnpjNumbers.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');

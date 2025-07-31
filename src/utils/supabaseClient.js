@@ -291,4 +291,61 @@ export const storageAPI = {
       };
     }
   },
-}; 
+};
+
+// Funções para manipulação dos logs de correção da IA
+export const correctionLogsAPI = {
+  // Salvar log de correção manual
+  saveCorrectionLog: async (logData) => {
+    try {
+      console.log('📝 Salvando log de correção manual:', logData);
+      
+      const { data, error } = await supabase
+        .from('ai_extraction_correction_logs')
+        .insert([logData])
+        .select();
+        
+      if (error) {
+        console.error('❌ Erro ao salvar log de correção:', error);
+        return { success: false, error };
+      }
+      
+      console.log('✅ Log de correção salvo com sucesso:', data[0]);
+      return { success: true, data: data[0], error: null };
+    } catch (error) {
+      console.error('❌ Erro no processamento do log de correção:', error);
+      return { 
+        success: false, 
+        data: null, 
+        error: {
+          message: 'Falha ao salvar log de correção: ' + (error.message || 'Erro desconhecido')
+        }
+      };
+    }
+  },
+
+  // Função auxiliar para comparar dados e identificar campos corrigidos
+  identifyCorrectiedFields: (aiData, correctedData) => {
+    const fieldsCorrectied = [];
+    
+    // Comparar cada campo
+    Object.keys(correctedData).forEach(field => {
+      const aiValue = aiData[field];
+      const correctedValue = correctedData[field];
+      
+      // Verificar se o campo foi corrigido (valores diferentes ou AI tinha valor vazio/null)
+      if (aiValue !== correctedValue || !aiValue || aiValue === '' || aiValue === null) {
+        if (correctedValue && correctedValue !== '' && correctedValue !== null) {
+          fieldsCorrectied.push(field);
+        }
+      }
+    });
+    
+    return fieldsCorrectied;
+  },
+
+  // Função auxiliar para gerar ID de sessão único
+  generateSessionId: () => {
+    return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+};

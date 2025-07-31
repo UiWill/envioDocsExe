@@ -16,6 +16,7 @@ const Explorer = ({ user }) => {
 
   const dropAreaRef = useRef(null);
   const processingTimeoutRef = useRef(null);
+  const fileInputRef = useRef(null);
   
   // Constante para limite máximo de documentos por lote
   const MAX_DOCUMENTS_PER_BATCH = 20;
@@ -624,6 +625,57 @@ const Explorer = ({ user }) => {
     setProcessingQueue(prev => [...prev, file]);
   };
 
+  // Função para abrir seletor de arquivos
+  const handleFileSelect = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  // Função para lidar com arquivos selecionados via input
+  const handleFileInputChange = (event) => {
+    const selectedFiles = Array.from(event.target.files);
+    const pdfFiles = selectedFiles.filter(file => file.name.toLowerCase().endsWith('.pdf'));
+    
+    if (pdfFiles.length > 0) {
+      // Verificar se a seleção excede o limite ANTES de processar
+      const currentQueueSize = processingQueue.length;
+      const totalDocuments = currentQueueSize + pdfFiles.length;
+      
+      if (totalDocuments > MAX_DOCUMENTS_PER_BATCH) {
+        addLog({
+          type: 'error',
+          message: `❌ Por favor, processar somente ${MAX_DOCUMENTS_PER_BATCH} no máximo por vez.`,
+          timestamp: new Date()
+        });
+        
+        addLog({
+          type: 'warning',
+          message: `📊 Você selecionou ${pdfFiles.length} arquivos, mas o limite é ${MAX_DOCUMENTS_PER_BATCH} documentos por lote.`,
+          timestamp: new Date()
+        });
+        
+        if (currentQueueSize > 0) {
+          addLog({
+            type: 'info',
+            message: `💡 Já existem ${currentQueueSize} documentos na fila. Aguarde o processamento terminar ou limpe a fila.`,
+            timestamp: new Date()
+          });
+        }
+        
+        // Limpa o input e NÃO processa nenhum arquivo
+        event.target.value = '';
+        return;
+      }
+      
+      // Se está dentro do limite, processa normalmente
+      handleFilePathsSelected(selectedFiles);
+    }
+    
+    // Limpa o input para permitir selecionar os mesmos arquivos novamente se necessário
+    event.target.value = '';
+  };
+
   // Renderiza a lista de arquivos processados
   const renderProcessedFiles = () => {
     return (
@@ -756,7 +808,37 @@ const Explorer = ({ user }) => {
             e.preventDefault();
             e.stopPropagation();
             const files = Array.from(e.dataTransfer.files).filter(f => f.name.toLowerCase().endsWith('.pdf'));
+            
             if (files.length > 0) {
+              // Verificar se o drag & drop excede o limite ANTES de processar
+              const currentQueueSize = processingQueue.length;
+              const totalDocuments = currentQueueSize + files.length;
+              
+              if (totalDocuments > MAX_DOCUMENTS_PER_BATCH) {
+                addLog({
+                  type: 'error',
+                  message: `❌ Por favor, processar somente ${MAX_DOCUMENTS_PER_BATCH} no máximo por vez.`,
+                  timestamp: new Date()
+                });
+                
+                addLog({
+                  type: 'warning',
+                  message: `📊 Você arrastou ${files.length} arquivos, mas o limite é ${MAX_DOCUMENTS_PER_BATCH} documentos por lote.`,
+                  timestamp: new Date()
+                });
+                
+                if (currentQueueSize > 0) {
+                  addLog({
+                    type: 'info',
+                    message: `💡 Já existem ${currentQueueSize} documentos na fila. Aguarde o processamento terminar ou limpe a fila.`,
+                    timestamp: new Date()
+                  });
+                }
+                
+                return; // NÃO processa nenhum arquivo
+              }
+              
+              // Se está dentro do limite, processa normalmente
               handleFilePathsSelected(files);
             }
           }}
@@ -782,6 +864,14 @@ const Explorer = ({ user }) => {
               <>
                 <div className="pdf-icon">📄</div>
                 <p>Arraste e solte arquivos PDF aqui</p>
+                <p className="drop-subtitle">ou</p>
+                <button 
+                  className="select-files-button"
+                  onClick={handleFileSelect}
+                  disabled={processingQueue.length >= MAX_DOCUMENTS_PER_BATCH}
+                >
+                  📂 Selecionar Arquivos
+                </button>
                 <p className="drop-subtitle">Sistema de processamento automático por IA</p>
                 <p className="batch-limit-notice">
                   📋 Máximo de {MAX_DOCUMENTS_PER_BATCH} documentos por lote
@@ -820,6 +910,16 @@ const Explorer = ({ user }) => {
           onCancel={handleFormCancel}
         />
       )}
+      
+      {/* Input file oculto para seleção de arquivos */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileInputChange}
+        accept=".pdf"
+        multiple
+        style={{ display: 'none' }}
+      />
     </div>
   );
 };

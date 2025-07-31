@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { saveManualData, validateClient } from '../utils/fileManager';
 import { saveNewDocumentType } from '../utils/pdfProcessor';
+import { correctionLogsAPI, auth } from '../utils/supabaseClient';
 import PDFViewer from './PDFViewer';
 import '../styles/PDFForm.css';
 
@@ -97,6 +98,7 @@ const PDFForm = ({ fileData, onSubmit, onCancel }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [clientValidated, setClientValidated] = useState(false);
+  const [correctionStartTime] = useState(Date.now()); // Tempo de início da correção
   const [newDocumentType, setNewDocumentType] = useState('');
   const [newDocumentKeywords, setNewDocumentKeywords] = useState('');
   const [customDocType, setCustomDocType] = useState('');
@@ -268,6 +270,68 @@ const PDFForm = ({ fileData, onSubmit, onCancel }) => {
       setLoading(false);
     }
   };
+
+  // Função para salvar log de correção manual
+  const saveCorrectionLog = async (aiData, correctedData) => {
+    try {
+      // Só salva log se não for apenas visualização
+      if (fileData?.isViewing) {
+        console.log('📝 Modo visualização - não salvando log de correção');
+        return;
+      }
+
+      const { user } = await auth.getCurrentUser();
+      if (!user) {
+        console.log('❌ Usuário não autenticado - não salvando log');
+        return;
+      }
+
+      // Identificar campos que foram corrigidos
+      const fieldsCorrectied = correctionLogsAPI.identifyCorrectiedFields(aiData, correctedData);
+      
+      if (fieldsCorrectied.length === 0) {
+        console.log('📝 Nenhum campo foi corrigido - não salvando log');
+        return;
+      }
+
+      // Calcular tempo de correção em segundos
+      const correctionTimeSeconds = Math.floor((Date.now() - correctionStartTime) / 1000);
+
+      // Determinar motivo da correção
+      let correctionReason = 'Dados extraídos pela IA necessitaram correção manual';
+      if (fieldsCorrectied.includes('DATA_ARQ')) {
+        correctionReason = 'Data do documento inválida ou não identificada';
+      } else if (fieldsCorrectied.includes('VALOR_PFD')) {
+        correctionReason = 'Valor do documento não identificado corretamente';
+      } else if (fieldsCorrectied.includes('CNPJ_CLIENTE')) {
+        correctionReason = 'CNPJ do cliente não identificado';
+      }
+
+      const logData = {
+        user_id: user.id,
+        document_name: fileData.name || fileData.fullName || 'Documento desconhecido',
+        document_url: fileData.url || null,
+        ai_extracted_data: aiData,
+        manually_corrected_data: correctedData,
+        fields_corrected: fieldsCorrectied,
+        correction_reason: correctionReason,
+        correction_time_seconds: correctionTimeSeconds,
+        processing_session_id: correctionLogsAPI.generateSessionId(),
+        document_type: correctedData.NOME_PDF || 'DESCONHECIDO'
+      };
+
+      console.log('📝 Salvando log de correção:', logData);
+      
+      const result = await correctionLogsAPI.saveCorrectionLog(logData);
+      if (result.success) {
+        console.log('✅ Log de correção salvo com sucesso');
+      } else {
+        console.error('❌ Erro ao salvar log de correção:', result.error);
+      }
+    } catch (error) {
+      console.error('❌ Erro ao processar log de correção:', error);
+    }
+  };
   
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -320,6 +384,10 @@ const PDFForm = ({ fileData, onSubmit, onCancel }) => {
     
     setLoading(true);
     try {
+      // Salvar log de correção ANTES de salvar os dados (assíncrono)
+      const aiExtractedData = extractDataFromFileData(fileData);
+      saveCorrectionLog(aiExtractedData, formData); // Não aguarda, executa em background
+      
       const result = await saveManualData(fileData, formData);
       
       if (!result.success) {

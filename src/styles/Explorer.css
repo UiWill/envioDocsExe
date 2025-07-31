@@ -758,3 +758,34 @@
 .btn-info:hover {
   background: #3182ce;
 }
+
+/* Botão de seleção de arquivos */
+.select-files-button {
+  background: var(--gradient-primary);
+  color: var(--white-color);
+  padding: 12px 24px;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: var(--transition);
+  font-weight: 600;
+  box-shadow: var(--shadow-md);
+  border: none;
+  margin: 16px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+}
+
+.select-files-button:hover:not(:disabled) {
+  background: var(--gradient-primary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.select-files-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  background: #ccc;
+}
