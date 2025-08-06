@@ -95,7 +95,7 @@ export const processPDF = async (pdfData, fileName = '') => {
         
         3. Para DATA_ARQ:
            - Use a data de vencimento no formato DD/MM/YYYY
-           - Para folha de pagamento, use a data de competência
+           - Para FOLHA DE PAG/FOLHA DE ADIANTAMENTO: SEMPRE use a data de recebimento/assinatura (geralmente aparece após "Vencimento:" ou "Data do Recebimento ASSINATURA"), NUNCA use a data de competência
            - Para documentos fiscais, use a data de vencimento
         
         4. Para NOME_PDF, identifique o tipo baseado nestas características:
