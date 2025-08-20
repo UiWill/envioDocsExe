@@ -98,15 +98,22 @@ export const processPDF = async (pdfData, fileName = '') => {
            - Para FOLHA DE PAG/FOLHA DE ADIANTAMENTO: SEMPRE use a data de recebimento/assinatura (geralmente aparece após "Vencimento:" ou "Data do Recebimento ASSINATURA"), NUNCA use a data de competência
            - Para documentos fiscais, use a data de vencimento
         
-        4. Para NOME_PDF, identifique o tipo baseado nestas características:
-           - **PARCELAMENTO**: PRIORIDADE MÁXIMA - Se o nome do arquivo contém "PARCELAMENTO", "PARCELA", "PARCELADO" OU se o conteúdo menciona parcelamento de tributos OU se o documento contém código da receita 1124 (parcelamento INSS) OU número de referência começando com "021100" (parcelamento), extraia apenas a parte relevante do nome do arquivo:
-             * Se arquivo contém "PARCELAMENTO INSS" ou "PARCELAMENTO IINSS", use "PARCELAMENTO INSS"
-             * Se arquivo contém "PARCELAMENTO ICMS", use "PARCELAMENTO ICMS"
-             * Se arquivo contém "PARCELAMENTO SIMPLES", use "PARCELAMENTO SIMPLES"
-             * Se arquivo contém apenas "PARCELAMENTO", use "PARCELAMENTO"
-             * IGNORE palavras como "CAIU COMO DARF", "TESTE", "COPIA", etc.
-           - **PGDAS**: PRIORIDADE MUITO ALTA - Se o documento contém "Documento de Arrecadação do Simples Nacional" OU "SIMPLES NACIONAL" OU se menciona códigos como "IRPJ - SIMPLES NACIONAL", identifique como "PGDAS"
-           - **DARF**: PRIORIDADE ALTA - Se o documento contém "Documento de Arrecadação de Receitas Federais" OU "DARF" OU se o nome do arquivo contém "DCTFWEB", identifique como "DARF"
+        4. Para NOME_PDF, siga EXATAMENTE estas regras na ordem de prioridade:
+        
+           **REGRA 1 - PARCELAMENTO (PRIORIDADE MÁXIMA):**
+           Se o nome do arquivo contém "PARCELAMENTO" OU código da receita 1124 OU número de referência começando com "021100":
+           - Arquivo "PARCELAMENTO INSS CAIU COMO DARF.pdf" → retorne "PARCELAMENTO INSS"
+           - Arquivo "PARCELAMENTO IINSS CAIU COMO DARF.pdf" → retorne "PARCELAMENTO INSS" 
+           - Arquivo "PARCELAMENTO ICMS.pdf" → retorne "PARCELAMENTO ICMS"
+           - Arquivo "PARCELAMENTO SIMPLES.pdf" → retorne "PARCELAMENTO SIMPLES"
+           - SEMPRE ignore palavras como "CAIU COMO DARF", "TESTE", "COPIA"
+           
+           **REGRA 2 - PGDAS (PRIORIDADE MUITO ALTA):**
+           Se o documento contém "Documento de Arrecadação do Simples Nacional" OU códigos "IRPJ - SIMPLES NACIONAL":
+           - Qualquer arquivo com conteúdo PGDAS → retorne "PGDAS" (NUNCA "PGDAS CAIU COMO DARF")
+           
+           **REGRA 3 - DARF (PRIORIDADE MÉDIA):**
+           Se o documento contém "Documento de Arrecadação de Receitas Federais" mas NÃO é parcelamento nem PGDAS → retorne "DARF"
            - FGTS: Guia de Recolhimento do FGTS ou GRF Digital
            - DAE: Documento de Arrecadação Estadual
            - ESOCIAL: Documento de Arrecadação do eSocial
