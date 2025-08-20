@@ -63,7 +63,13 @@ export const processPDF = async (pdfData, fileName = '') => {
         NOME DO ARQUIVO: ${fileName}
         
         Analise este PDF de documento fiscal e extraia as informações exatamente como aparecem.
-        IMPORTANTE: Para documentos de PARCELAMENTO, use EXATAMENTE o nome do arquivo (sem .pdf) como NOME_PDF para preservar o tipo específico.
+        IMPORTANTE: Para documentos de PARCELAMENTO, extraia apenas a parte relevante do nome do arquivo (sem .pdf) como NOME_PDF.
+        
+        EXEMPLOS DE PARCELAMENTO:
+        - Nome arquivo: "PARCELAMENTO INSS CAIU COMO DARF.pdf" → NOME_PDF: "PARCELAMENTO INSS"
+        - Nome arquivo: "PARCELAMENTO IINSS CAIU COMO DARF.pdf" → NOME_PDF: "PARCELAMENTO INSS"
+        - Nome arquivo: "PARCELAMENTO ICMS.pdf" → NOME_PDF: "PARCELAMENTO ICMS"
+        - SEMPRE ignore palavras como "CAIU COMO DARF", "TESTE", "COPIA"
         
         Retorne APENAS um objeto JSON com estes campos:
         {
