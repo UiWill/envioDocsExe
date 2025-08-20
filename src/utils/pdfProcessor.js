@@ -100,7 +100,7 @@ export const processPDF = async (pdfData, fileName = '') => {
         
         4. Para NOME_PDF, siga EXATAMENTE estas regras na ordem de prioridade:
         
-           **REGRA 1 - PARCELAMENTO (PRIORIDADE MÁXIMA):**
+           **REGRA 1 - PARCELAMENTO (PRIORIDADE MÁXIMA - USA NOME DO ARQUIVO):**
            Se o nome do arquivo contém "PARCELAMENTO" OU código da receita 1124 OU número de referência começando com "021100":
            - Arquivo "PARCELAMENTO INSS CAIU COMO DARF.pdf" → retorne "PARCELAMENTO INSS"
            - Arquivo "PARCELAMENTO IINSS CAIU COMO DARF.pdf" → retorne "PARCELAMENTO INSS" 
@@ -108,12 +108,14 @@ export const processPDF = async (pdfData, fileName = '') => {
            - Arquivo "PARCELAMENTO SIMPLES.pdf" → retorne "PARCELAMENTO SIMPLES"
            - SEMPRE ignore palavras como "CAIU COMO DARF", "TESTE", "COPIA"
            
-           **REGRA 2 - PGDAS (PRIORIDADE MUITO ALTA):**
+           **REGRA 2 - PGDAS (PRIORIDADE MUITO ALTA - USA CONTEÚDO DO DOCUMENTO):**
            Se o documento contém "Documento de Arrecadação do Simples Nacional" OU códigos "IRPJ - SIMPLES NACIONAL":
-           - Qualquer arquivo com conteúdo PGDAS → retorne "PGDAS" (NUNCA "PGDAS CAIU COMO DARF")
+           - SEMPRE retorne "PGDAS" (baseado no conteúdo, ignore o nome do arquivo completamente)
+           - Mesmo que o arquivo se chame "PGDAS CAIU COMO DARF.pdf", retorne apenas "PGDAS"
            
-           **REGRA 3 - DARF (PRIORIDADE MÉDIA):**
-           Se o documento contém "Documento de Arrecadação de Receitas Federais" mas NÃO é parcelamento nem PGDAS → retorne "DARF"
+           **REGRA 3 - DARF (PRIORIDADE MÉDIA - USA CONTEÚDO DO DOCUMENTO):**
+           Se o documento contém "Documento de Arrecadação de Receitas Federais" mas NÃO é parcelamento nem PGDAS:
+           - SEMPRE retorne "DARF" (baseado no conteúdo, ignore o nome do arquivo)
            - FGTS: Guia de Recolhimento do FGTS ou GRF Digital
            - DAE: Documento de Arrecadação Estadual
            - ESOCIAL: Documento de Arrecadação do eSocial
