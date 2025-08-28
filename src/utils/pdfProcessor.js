@@ -114,31 +114,42 @@ export const processPDF = async (pdfData, fileName = '') => {
            - Arquivo "PARCELAMENTO SIMPLES.pdf" → retorne "PARCELAMENTO SIMPLES"
            - SEMPRE ignore palavras como "CAIU COMO DARF", "TESTE", "COPIA"
            
-           **REGRA 2 - PGDAS (PRIORIDADE MUITO ALTA - USA CONTEÚDO DO DOCUMENTO):**
+           **REGRA 2 - HONORARIOS (PRIORIDADE MUITO ALTA - USA CONTEÚDO DO DOCUMENTO):**
+           Se o documento é um BOLETO BANCÁRIO de escritório de contabilidade:
+           - Contém "CONTABILIDADE" no beneficiário (ex: "AM CONTABILIDADE LTDA")
+           - Tem "Boleto Pix" ou código de barras bancário
+           - Tem campos típicos de boleto: "Nosso Número", "Agência", "Vencimento", "Valor do Documento"
+           - Pagador/Sacado é uma EMPRESA DIFERENTE do beneficiário contabilidade
+           - NÃO contém "Documento de Arrecadação" nem códigos de receita federal
+           - SEMPRE retorne "HONORARIOS"
+           
+           **REGRA 3 - PGDAS (PRIORIDADE MUITO ALTA - USA CONTEÚDO DO DOCUMENTO):**
            Se o documento contém "Documento de Arrecadação do Simples Nacional" OU códigos "IRPJ - SIMPLES NACIONAL":
            - SEMPRE retorne "PGDAS" (baseado no conteúdo, ignore o nome do arquivo completamente)
            - Mesmo que o arquivo se chame "PGDAS CAIU COMO DARF.pdf", retorne apenas "PGDAS"
            
-           **REGRA 3 - DARF (PRIORIDADE MÉDIA - USA CONTEÚDO DO DOCUMENTO):**
+           **REGRA 4 - DARF (PRIORIDADE MÉDIA - USA CONTEÚDO DO DOCUMENTO):**
            Se o documento contém "Documento de Arrecadação de Receitas Federais" mas NÃO é parcelamento nem PGDAS:
            - SEMPRE retorne "DARF" (baseado no conteúdo, ignore o nome do arquivo)
+           
+           **OUTROS TIPOS:**
+           - HONORARIOS: Boleto de honorários de escritório de contabilidade
            - FGTS: Guia de Recolhimento do FGTS ou GRF Digital
            - DAE: Documento de Arrecadação Estadual
            - ESOCIAL: Documento de Arrecadação do eSocial
-           - HONORARIOS: Recibo de honorários ou RPA
            - ALVARA: Documento de Arrecadação Municipal (DAM)
            - FOLHA DE PAG: Recibo de pagamento/contracheque (contém "RECIBO DE PAGAMENTO DE CONTRIBUINTE INDIVIDUAL")
            - FOLHA DE ADIANTAMENTO: Recibo de adiantamento de salário (contém "RECIBO DE ADIANTAMENTO DE SALÁRIO")
            - GPS: Guia da Previdência Social
         
         5. Para NOME_CLIENTE - INSTRUÇÕES ESPECÍFICAS POR TIPO:
-           - **Para HONORARIOS/RPA**: 
-             * SEMPRE busque a seção "Pagador:" no documento
+           - **Para HONORARIOS/BOLETOS de contabilidade**: 
+             * SEMPRE busque a seção "Pagador" ou "Sacado" no documento
              * Use APENAS o nome da pessoa/empresa que está PAGANDO pelos serviços
-             * IGNORE dados da contabilidade/beneficiário/sacador
-             * REMOVA qualquer CPF/CNPJ do nome (ex: "27.894.767 JOÃO DA SILVA" -> "JOÃO DA SILVA")
-             * Se aparecer "Pagador: 27.894.767 FRANCIELLY ALINE ELIAS GOMES" use apenas "FRANCIELLY ALINE ELIAS GOMES"
-             * Exemplo: Se encontrar "Pagador: JOÃO DA SILVA" use "JOÃO DA SILVA"
+             * IGNORE dados da contabilidade/beneficiário/sacador (ex: "AM CONTABILIDADE")
+             * REMOVA qualquer CPF/CNPJ do nome (ex: "41.894.000 ADITUS COMERCIO" -> "ADITUS COMERCIO ELETRONICO DE CALCADOS L")
+             * Para boletos bancários: procure por "Pagador" no corpo do boleto
+             * Exemplo: "Pagador: ADITUS COMERCIO ELETRONICO DE CALCADOS L" use "ADITUS COMERCIO ELETRONICO DE CALCADOS L"
            - **Para outros documentos**: 
              * Use a razão social completa da empresa contribuinte
              * Para folha de pagamento, use o nome do empregador
@@ -151,7 +162,21 @@ export const processPDF = async (pdfData, fileName = '') => {
            - Não inclua explicações ou texto adicional, apenas o JSON
            - Se não encontrar alguma informação, retorne o campo como string vazia ("")
         
-        7. EXEMPLOS DE CNPJs INVÁLIDOS (retornar ""):
+        7. EXEMPLOS PRÁTICOS DE CLASSIFICAÇÃO:
+           
+           **HONORARIOS vs DARF - COMO DISTINGUIR:**
+           - HONORARIOS: Boleto bancário com beneficiário "CONTABILIDADE", pagador é cliente
+           - DARF: Documento oficial com "Documento de Arrecadação de Receitas Federais"
+           
+           **Exemplo HONORARIOS:**
+           Se vir: "AM CONTABILIDADE LTDA" como beneficiário + "Boleto Pix" + código de barras + "Pagador: EMPRESA X"
+           → SEMPRE retorne "HONORARIOS"
+           
+           **Exemplo DARF:**
+           Se vir: "Documento de Arrecadação de Receitas Federais" + código da receita
+           → Retorne "DARF"
+        
+        8. EXEMPLOS DE CNPJs INVÁLIDOS (retornar ""):
            - "56.***.*853.***-**" (mascarado)
            - "00.259329450-36" (número de documento, não CNPJ)
            - "123456789" (incompleto)
