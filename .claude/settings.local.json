@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(/C:\\ERP_SISTEMAS\\EnvioDocsAPIexe\\src\\utils/**)",
+      "Read(/C:\\ERP_SISTEMAS\\EnvioDocsAPIexe\\src\\utils/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

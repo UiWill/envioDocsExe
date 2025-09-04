@@ -2,6 +2,16 @@
 import { processPDF } from './pdfProcessor';
 import { documentosAPI, storageAPI, clientesAPI } from './supabaseClient';
 
+// Função para sanitizar nomes de arquivos para upload no Storage
+const sanitizeFileName = (fileName) => {
+  return fileName
+    .normalize('NFD') // Decompõe caracteres acentuados
+    .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+    .replace(/[^a-zA-Z0-9._-]/g, '_') // Substitui caracteres especiais por _
+    .replace(/__+/g, '_') // Remove underscores duplicados
+    .replace(/^_|_$/g, ''); // Remove underscores do início/fim
+};
+
 // Função para validar se a data não é menor que a data atual
 const validateDocumentDate = (dateStr) => {
   try {
@@ -176,7 +186,7 @@ export const processFile = async (fileData) => {
         
         const { url, error: uploadError } = await storageAPI.uploadPDF(
           pdfBuffer,
-          `${result.data.CNPJ_CURTO}/${Date.now()}_${name}`
+          `${result.data.CNPJ_CURTO}/${Date.now()}_${sanitizeFileName(name)}`
         );
         
         if (uploadError) {
@@ -325,7 +335,7 @@ export const saveManualData = async (fileData, manualData) => {
     console.log('🚨 SAVEMANUAL - Fazendo upload para storage...');
     const { url, error: uploadError } = await storageAPI.uploadPDF(
       pdfBuffer,
-      `${manualData.CNPJ_CURTO}/${Date.now()}_${fileData.name}`
+      `${manualData.CNPJ_CURTO}/${Date.now()}_${sanitizeFileName(fileData.name)}`
     );
     
     if (uploadError) {
