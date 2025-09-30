@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Read(/C:\\ERP_SISTEMAS\\EnvioDocsAPIexe\\src\\utils/**)",
-      "Read(/C:\\ERP_SISTEMAS\\EnvioDocsAPIexe\\src\\utils/**)"
+      "Read(/C:\\ERP_SISTEMAS\\EnvioDocsAPIexe\\src\\utils/**)",
+      "Bash(npm start)"
     ],
     "deny": [],
     "ask": []

@@ -95,7 +95,7 @@ export const processPDF = async (pdfData, fileName = '') => {
            - Mantenha a formatação XX.XXX.XXX/XXXX-XX apenas para CNPJs válidos e completos
            - **Para HONORARIOS**: Se houver CNPJ válido no documento (ex: "CNPJ/CPF: 27.894.767/0001-68"), use-o
            - **Para HONORARIOS**: Se só houver CPF, deixe CNPJ_CLIENTE como ""
-           - **Para FGTS - FALLBACK ESPECIAL**: Se não conseguir o CNPJ completo, procure por CNPJ parcial (8 dígitos) no campo "CPF/CNPJ do Empregador" (ex: "41.894.000"). Se encontrar, formate como "XX.XXX.XXX/0001-00" (completando com /0001-00)
+           - **Para FGTS - FALLBACK ESPECIAL**: Se não conseguir o CNPJ completo, procure por CNPJ parcial no campo "CPF/CNPJ do Empregador". Pode aparecer como "43.155.559" (8 dígitos formatados) ou "43155559" (8 dígitos sem formatação). Se encontrar, retorne exatamente como aparece (mantenha a formatação original)
            - Para folha de pagamento, use o CNPJ do empregador (se visível)
            - Para documentos fiscais, use o CNPJ do contribuinte/empresa (se visível)
         
@@ -216,15 +216,21 @@ export const processPDF = async (pdfData, fileName = '') => {
       // Validar e corrigir CNPJ
       if (extractedData.CNPJ_CLIENTE) {
         const cnpjNumbers = extractedData.CNPJ_CLIENTE.replace(/\D/g, '');
-        
+
         // CNPJ deve ter exatamente 14 dígitos
         if (cnpjNumbers.length !== 14) {
           // Verificar se é FGTS e se temos um CNPJ parcial (8 dígitos)
           if (extractedData.NOME_PDF === 'FGTS' && cnpjNumbers.length === 8) {
-            // Completar CNPJ parcial do FGTS com /0001-00
-            const cnpjCompleto = cnpjNumbers + '000100';
-            extractedData.CNPJ_CLIENTE = cnpjCompleto.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
-            console.log(`✅ FGTS - CNPJ parcial completado: ${cnpjNumbers} -> ${extractedData.CNPJ_CLIENTE}`);
+            // Para FGTS, manter o CNPJ parcial como está (não completar)
+            // Apenas garantir que está no formato correto XX.XXX.XXX
+            if (extractedData.CNPJ_CLIENTE.includes('.')) {
+              // Já está formatado, manter como está
+              console.log(`✅ FGTS - CNPJ parcial formatado mantido: ${extractedData.CNPJ_CLIENTE}`);
+            } else {
+              // Formatar como XX.XXX.XXX
+              extractedData.CNPJ_CLIENTE = cnpjNumbers.replace(/^(\d{2})(\d{3})(\d{3})$/, '$1.$2.$3');
+              console.log(`✅ FGTS - CNPJ parcial formatado: ${cnpjNumbers} -> ${extractedData.CNPJ_CLIENTE}`);
+            }
           } else {
             console.log(`⚠️ CNPJ inválido detectado: ${extractedData.CNPJ_CLIENTE} (${cnpjNumbers.length} dígitos) - removendo`);
             extractedData.CNPJ_CLIENTE = '';
@@ -262,9 +268,17 @@ export const processPDF = async (pdfData, fileName = '') => {
       console.log('  - needsManualInput:', needsManualInput);
       
       // Calcular CNPJ_CURTO
-      const cnpjCurto = extractedData.CNPJ_CLIENTE ? 
-        extractedData.CNPJ_CLIENTE.split('').filter(char => '0123456789'.includes(char)).join('').substring(0, 6) : 
-        null;
+      let cnpjCurto = null;
+      if (extractedData.CNPJ_CLIENTE) {
+        const cnpjNumbers = extractedData.CNPJ_CLIENTE.split('').filter(char => '0123456789'.includes(char)).join('');
+
+        // Para FGTS com CNPJ parcial (8 dígitos), usar os primeiros 6 dígitos
+        // Para CNPJs completos (14 dígitos), usar os primeiros 6 dígitos
+        if (cnpjNumbers.length >= 6) {
+          cnpjCurto = cnpjNumbers.substring(0, 6);
+          console.log(`✅ CNPJ_CURTO calculado: ${cnpjCurto} (de ${cnpjNumbers})`);
+        }
+      }
       
       console.log('🔍 PDFPROCESSOR - CNPJ_CLIENTE extraído:', extractedData.CNPJ_CLIENTE);
       console.log('🔍 PDFPROCESSOR - CNPJ_CURTO calculado:', cnpjCurto, 'tipo:', typeof cnpjCurto);
