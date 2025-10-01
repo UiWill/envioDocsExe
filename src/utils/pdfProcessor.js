@@ -88,14 +88,18 @@ export const processPDF = async (pdfData, fileName = '') => {
            - Para outros documentos, use o valor total/a pagar
         
         2. Para CNPJ_CLIENTE - ATENÇÃO ESPECIAL:
-           - APENAS use CNPJs COMPLETOS e VISÍVEIS (14 dígitos)
-           - Se o CNPJ estiver mascarado/oculto (ex: "56.***.*853.***-**" ou com asteriscos), retorne ""
-           - Se aparecer apenas um número de documento que NÃO seja CNPJ, retorne ""
-           - NUNCA use número de documento, código de identificação ou outros números como CNPJ
-           - Mantenha a formatação XX.XXX.XXX/XXXX-XX apenas para CNPJs válidos e completos
-           - **Para HONORARIOS**: Se houver CNPJ válido no documento (ex: "CNPJ/CPF: 27.894.767/0001-68"), use-o
-           - **Para HONORARIOS**: Se só houver CPF, deixe CNPJ_CLIENTE como ""
-           - **Para FGTS - FALLBACK ESPECIAL**: Se não conseguir o CNPJ completo, procure por CNPJ parcial no campo "CPF/CNPJ do Empregador". Pode aparecer como "43.155.559" (8 dígitos formatados) ou "43155559" (8 dígitos sem formatação). Se encontrar, retorne exatamente como aparece (mantenha a formatação original)
+           - **Para FGTS - REGRA PRIORITÁRIA**:
+             * SEMPRE procure no campo "CPF/CNPJ do Empregador"
+             * ACEITE CNPJ PARCIAL mesmo com apenas 8 dígitos (ex: "57.611.495" ou "43.155.559")
+             * Retorne EXATAMENTE como aparece no PDF, mantendo pontos e formatação
+             * Exemplos válidos: "57.611.495", "43.155.559", "43155559"
+           - **Para outros documentos**:
+             * APENAS use CNPJs COMPLETOS e VISÍVEIS (14 dígitos)
+             * Se o CNPJ estiver mascarado/oculto (ex: "56.***.*853.***-**"), retorne ""
+             * Se aparecer apenas um número de documento que NÃO seja CNPJ, retorne ""
+             * NUNCA use número de documento ou código de identificação como CNPJ
+             * Mantenha a formatação XX.XXX.XXX/XXXX-XX para CNPJs completos
+           - **Para HONORARIOS**: Se houver CNPJ válido (ex: "CNPJ/CPF: 27.894.767/0001-68"), use-o. Se só houver CPF, deixe ""
            - Para folha de pagamento, use o CNPJ do empregador (se visível)
            - Para documentos fiscais, use o CNPJ do contribuinte/empresa (se visível)
         
