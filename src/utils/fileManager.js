@@ -164,7 +164,20 @@ export const processFile = async (fileData) => {
     }
     
     console.log('✅ PROCESSFILE - Nenhuma duplicata detectada, prosseguindo com processamento automático...');
-    
+
+    // VALIDAÇÃO CRÍTICA: CNPJ_CURTO é obrigatório
+    if (!result.data?.CNPJ_CURTO || result.data.CNPJ_CURTO === null || result.data.CNPJ_CURTO === '') {
+      console.log('❌ PROCESSFILE - CNPJ_CURTO ausente ou inválido, forçando input manual');
+      return {
+        success: false,
+        fileName: name,
+        filePath: path,
+        error: '⚠️ CNPJ do cliente não foi identificado no documento. Por favor, preencha manualmente.',
+        needsManualInput: true,
+        data: result.data
+      };
+    }
+
     // Se todos os dados foram extraídos com sucesso e não precisamos de input manual
     if (!result.needsManualInput) {
       try {
@@ -419,7 +432,16 @@ export const saveManualData = async (fileData, manualData) => {
     }
     
     console.log('✅ SAVEMANUAL - Verificações concluídas, prosseguindo com salvamento...');
-    
+
+    // VALIDAÇÃO CRÍTICA: CNPJ_CURTO é obrigatório
+    if (!manualData.CNPJ_CURTO || manualData.CNPJ_CURTO === null || manualData.CNPJ_CURTO === '') {
+      console.log('❌ SAVEMANUAL - CNPJ_CURTO ausente ou inválido');
+      return {
+        success: false,
+        error: '⚠️ CNPJ curto é obrigatório. Por favor, preencha o CNPJ do cliente.'
+      };
+    }
+
     // VALIDAÇÃO CRÍTICA: Verificar se CNPJ_CURTO existe na tabela Clientes
     if (manualData.CNPJ_CURTO) {
       try {
