@@ -1,6 +1,7 @@
 import { SHA256 } from 'crypto-js';
 import axios from 'axios';
 import { supabase, clientesAPI } from './supabaseClient';
+import { ajustarDataParaDiaUtil } from './businessDays';
 
 // Calcula o hash SHA-256
 export const calculateHash = (buffer) => {
@@ -214,8 +215,18 @@ export const processPDF = async (pdfData, fileName = '') => {
       const start = geminiResponse.indexOf('{');
       const end = geminiResponse.lastIndexOf('}') + 1;
       const extractedData = JSON.parse(geminiResponse.slice(start, end));
-      
+
       console.log('🎯 Dados extraídos pela IA:', extractedData);
+
+      // Ajustar data para próximo dia útil se cair em fim de semana ou feriado
+      if (extractedData.DATA_ARQ) {
+        const dataOriginal = extractedData.DATA_ARQ;
+        extractedData.DATA_ARQ = ajustarDataParaDiaUtil(dataOriginal);
+
+        if (dataOriginal !== extractedData.DATA_ARQ) {
+          console.log(`✅ Data ajustada para dia útil: ${dataOriginal} → ${extractedData.DATA_ARQ}`);
+        }
+      }
       
       // Validar e corrigir CNPJ
       if (extractedData.CNPJ_CLIENTE) {
