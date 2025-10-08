@@ -95,22 +95,28 @@ export const processPDF = async (pdfData, fileName = '') => {
              * Retorne EXATAMENTE como aparece no PDF, mantendo pontos e formatação
              * Exemplos válidos: "57.611.495", "43.155.559", "43155559"
            - **Para DAE (Documento de Arrecadação Estadual) - REGRA PRIORITÁRIA**:
-             * SEMPRE procure o CNPJ COMPLETO com 14 dígitos em QUALQUER FORMATO:
-               - Com formatação: "41.894.000/0001-60" ou "54.539.129/0001-00"
-               - SEM formatação (apenas números): "41894000000160" ou "51587654000102" ou "54539129000100"
-             * Procure em TODA a página, especialmente:
-               - No meio do documento (geralmente aparece completo, com ou sem formatação)
-               - Próximo ao nome da empresa
-               - No rodapé do documento (muitas vezes aparece sem formatação)
-               - Antes da linha "ATENÇÃO: PAGAMENTO COM PIX"
-             * IGNORE completamente o "Número Documento" que aparece como "00.XXXXXXXXX-XX" (esse NÃO é CNPJ!)
-             * IGNORE CNPJs mascarados no cabeçalho (ex: "41.***.000/****-**" ou "51.***.654/****-**")
-             * Exemplos válidos:
-               - "41.894.000/0001-60" (formatado) → use "41.894.000/0001-60"
-               - "51587654000102" (sem formatação, 14 dígitos) → formate como "51.587.654/0001-02"
-               - "54539129000100" (sem formatação, 14 dígitos) → formate como "54.539.129/0001-00"
-             * Se encontrar sequência de 14 dígitos que NÃO começa com "00." e está no corpo do documento, é o CNPJ!
-             * Se não encontrar CNPJ completo e visível, retorne ""
+             * ATENÇÃO: No rodapé do DAE SEMPRE aparece uma sequência de 14 dígitos SEM formatação - ESSE É O CNPJ!
+             * PASSO A PASSO para encontrar o CNPJ em DAE:
+               1. Varra TODO o documento procurando por qualquer sequência de EXATAMENTE 14 dígitos numéricos consecutivos
+               2. Essa sequência pode aparecer em QUALQUER lugar: meio do documento, rodapé, antes de "ATENÇÃO: PAGAMENTO COM PIX"
+               3. A sequência de 14 dígitos pode estar:
+                  - Formatada: "41.894.000/0001-60" ou "54.539.129/0001-00"
+                  - SEM NENHUMA formatação: "41894000000160", "51587654000102", "54539129000100", "57611495000102"
+               4. Quando encontrar, FORMATE no padrão XX.XXX.XXX/XXXX-XX antes de retornar
+
+             * IGNORE ESTES PADRÕES:
+               - CNPJs mascarados no cabeçalho: "41.***.000/****-**", "51.***.654/****-**", "57.***.495/****-**"
+               - "Número Documento" com formato "00.XXXXXXXXX-XX" (tem 13 dígitos, NÃO é CNPJ!)
+               - Sequências que começam com "00." (são números de documento)
+
+             * EXEMPLOS PRÁTICOS DE BUSCA:
+               - Encontrou "41894000000160" no rodapé? → Retorne "41.894.000/0001-60"
+               - Encontrou "51587654000102" no rodapé? → Retorne "51.587.654/0001-02"
+               - Encontrou "54539129000100" no rodapé? → Retorne "54.539.129/0001-00"
+               - Encontrou "57611495000102" no rodapé? → Retorne "57.611.495/0001-02"
+               - Encontrou "41.894.000/0001-60" já formatado? → Retorne "41.894.000/0001-60"
+
+             * IMPORTANTE: Procure por TODA sequência de 14 dígitos no documento. Ignore os campos "CNPJ" mascarados do cabeçalho.
            - **Para outros documentos**:
              * APENAS use CNPJs COMPLETOS e VISÍVEIS (14 dígitos)
              * Se o CNPJ estiver mascarado/oculto (ex: "56.***.*853.***-**"), retorne ""
@@ -224,6 +230,12 @@ export const processPDF = async (pdfData, fileName = '') => {
            - Número Documento: "00.273427645-07" ← IGNORAR (não é CNPJ, tem 13 dígitos)
            - Rodapé: "54539129000100" ← USAR ESTE (14 dígitos, é o CNPJ!)
            Resposta: { "CNPJ_CLIENTE": "54.539.129/0001-00" } (formatado)
+
+           **Exemplo 4 - DAE com CNPJ SEM formatação (AZA CALCADOS):**
+           - Cabeçalho: "CNPJ: 57.***.495/****-**" ← IGNORAR (mascarado)
+           - Número Documento: "00.273428943-89" ← IGNORAR (não é CNPJ, tem 13 dígitos)
+           - Rodapé: "57611495000102" ← USAR ESTE (14 dígitos, é o CNPJ!)
+           Resposta: { "CNPJ_CLIENTE": "57.611.495/0001-02" } (formatado)
       `;
 
       const response = await axios.post(`${endpoint}?key=${apiKey}`, {
@@ -335,14 +347,68 @@ export const processPDF = async (pdfData, fileName = '') => {
       
       console.log('🔍 PDFPROCESSOR - CNPJ_CLIENTE extraído:', extractedData.CNPJ_CLIENTE);
       console.log('🔍 PDFPROCESSOR - CNPJ_CURTO calculado:', cnpjCurto, 'tipo:', typeof cnpjCurto);
-      
+
+      // VALIDAÇÃO EXTRA PARA DAE: Se o CNPJ extraído não for válido, tentar encontrar todas as sequências de 14 dígitos no PDF
+      if (extractedData.NOME_PDF === 'DAE' && (!hasCNPJ || !cnpjCurto)) {
+        console.log('🔍 DAE - CNPJ não encontrado pela IA, tentando validação manual de todas as sequências de 14 dígitos...');
+        try {
+          // Converter PDF base64 para texto usando regex para extrair sequências numéricas
+          const pdfText = Buffer.from(pdfData, 'base64').toString('latin1');
+
+          // Procurar por todas as sequências de exatamente 14 dígitos consecutivos
+          const regex = /\b(\d{14})\b/g;
+          const matches = [...pdfText.matchAll(regex)];
+
+          console.log(`🔍 DAE - Encontradas ${matches.length} sequências de 14 dígitos no PDF`);
+
+          // Tentar validar cada sequência encontrada
+          for (const match of matches) {
+            const possibleCNPJ = match[1];
+
+            // Ignorar sequências que começam com "00" (são números de documento)
+            if (possibleCNPJ.startsWith('00')) {
+              console.log(`⚠️ DAE - Ignorando sequência ${possibleCNPJ} (começa com 00)`);
+              continue;
+            }
+
+            const testCnpjCurto = possibleCNPJ.substring(0, 6);
+            console.log(`🔍 DAE - Testando CNPJ: ${possibleCNPJ} (CNPJ_CURTO: ${testCnpjCurto})`);
+
+            try {
+              const { exists, cliente } = await clientesAPI.validateCNPJCurto(testCnpjCurto);
+
+              if (exists) {
+                // Encontramos um CNPJ válido!
+                const formattedCNPJ = possibleCNPJ.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
+                console.log(`✅ DAE - CNPJ válido encontrado e confirmado no banco: ${formattedCNPJ} (Cliente: ${cliente?.NOME_RAZAO_SOCIAL})`);
+
+                extractedData.CNPJ_CLIENTE = formattedCNPJ;
+                cnpjCurto = testCnpjCurto;
+                break; // Encontramos o CNPJ correto, podemos parar
+              }
+            } catch (validationError) {
+              console.log(`⚠️ DAE - CNPJ ${possibleCNPJ} não encontrado na base de clientes`);
+            }
+          }
+
+          if (!extractedData.CNPJ_CLIENTE) {
+            console.log('❌ DAE - Nenhuma sequência de 14 dígitos foi validada com sucesso na base de clientes');
+          }
+        } catch (error) {
+          console.error('❌ Erro na validação manual de CNPJs para DAE:', error);
+        }
+      }
+
+      // Recalcular hasCNPJ após a validação extra do DAE
+      const hasCNPJUpdated = extractedData.CNPJ_CLIENTE && extractedData.CNPJ_CLIENTE.trim() !== '';
+
       // VALIDAÇÃO CRÍTICA: Verificar se CNPJ_CURTO existe na tabela Clientes
       let cnpjValidationError = null;
-      if (cnpjCurto && hasCNPJ) {
+      if (cnpjCurto && hasCNPJUpdated) {
         try {
           console.log('🔍 Validando CNPJ_CURTO na tabela Clientes:', cnpjCurto);
           const { exists, cliente, error } = await clientesAPI.validateCNPJCurto(cnpjCurto);
-          
+
           if (error && !error.message?.includes('No rows found')) {
             console.error('⚠️ Erro ao validar CNPJ_CURTO:', error);
             cnpjValidationError = 'Cliente com esse CNPJ não está cadastrado no sistema';
@@ -358,10 +424,14 @@ export const processPDF = async (pdfData, fileName = '') => {
         }
       }
       
+      // Recalcular isSuccess e needsManualInput após a validação extra do DAE
+      const isSuccessUpdated = hasMainData && (hasCNPJUpdated || isHonorarios);
+      const needsManualInputUpdated = !isSuccessUpdated;
+
       // Preparar dados para salvar
       const result = {
-        success: isSuccess && !cnpjValidationError,
-        needsManualInput: needsManualInput || !!cnpjValidationError,
+        success: isSuccessUpdated && !cnpjValidationError,
+        needsManualInput: needsManualInputUpdated || !!cnpjValidationError,
         data: {
           ...extractedData,
           HASH: SHA256(pdfData).toString(),
