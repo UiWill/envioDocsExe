@@ -352,8 +352,9 @@ export const processPDF = async (pdfData, fileName = '') => {
       if (extractedData.NOME_PDF === 'DAE' && (!hasCNPJ || !cnpjCurto)) {
         console.log('🔍 DAE - CNPJ não encontrado pela IA, tentando validação manual de todas as sequências de 14 dígitos...');
         try {
-          // Converter PDF base64 para texto usando regex para extrair sequências numéricas
-          const pdfText = Buffer.from(pdfData, 'base64').toString('latin1');
+          // Converter PDF base64 para texto usando atob (compatível com browser)
+          const binaryString = atob(pdfData);
+          const pdfText = binaryString;
 
           // Procurar por todas as sequências de exatamente 14 dígitos consecutivos
           const regex = /\b(\d{14})\b/g;
