@@ -94,6 +94,16 @@ export const processPDF = async (pdfData, fileName = '') => {
              * ACEITE CNPJ PARCIAL mesmo com apenas 8 dígitos (ex: "57.611.495" ou "43.155.559")
              * Retorne EXATAMENTE como aparece no PDF, mantendo pontos e formatação
              * Exemplos válidos: "57.611.495", "43.155.559", "43155559"
+           - **Para DAE (Documento de Arrecadação Estadual) - REGRA PRIORITÁRIA**:
+             * SEMPRE procure o CNPJ COMPLETO (14 dígitos) no formato XX.XXX.XXX/XXXX-XX
+             * Procure em TODA a página, especialmente:
+               - No meio do documento (geralmente aparece completo e visível)
+               - Próximo ao nome da empresa
+               - No rodapé do documento
+             * IGNORE completamente o "Número Documento" que aparece como "00.XXXXXXXXX-XX" (esse NÃO é CNPJ!)
+             * IGNORE CNPJs mascarados no cabeçalho (ex: "41.***.000/****-**")
+             * Exemplo: Se aparecer "41.894.000/0001-60" em qualquer lugar do documento, use esse
+             * Se não encontrar CNPJ completo e visível, retorne ""
            - **Para outros documentos**:
              * APENAS use CNPJs COMPLETOS e VISÍVEIS (14 dígitos)
              * Se o CNPJ estiver mascarado/oculto (ex: "56.***.*853.***-**"), retorne ""
@@ -183,9 +193,21 @@ export const processPDF = async (pdfData, fileName = '') => {
         
         8. EXEMPLOS DE CNPJs INVÁLIDOS (retornar ""):
            - "56.***.*853.***-**" (mascarado)
-           - "00.259329450-36" (número de documento, não CNPJ)
+           - "00.259329450-36" (número de documento DAE, não CNPJ - tem 13 dígitos)
+           - "00.273497564-88" (número de documento DAE, não CNPJ - tem 13 dígitos)
            - "123456789" (incompleto)
            - Qualquer número que não seja um CNPJ completo de 14 dígitos
+
+        9. EXEMPLO PRÁTICO - DAE (Documento de Arrecadação Estadual):
+           **Documento DAE contém:**
+           - Cabeçalho: "CNPJ: 41.***.000/****-**" ← IGNORAR (mascarado)
+           - Número Documento: "00.273497564-88" ← IGNORAR (não é CNPJ, tem 13 dígitos)
+           - Meio do documento: "41.894.000/0001-60" ← USAR ESTE (CNPJ completo e visível)
+
+           **Resposta correta:**
+           {
+             "CNPJ_CLIENTE": "41.894.000/0001-60"
+           }
       `;
 
       const response = await axios.post(`${endpoint}?key=${apiKey}`, {
