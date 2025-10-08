@@ -95,14 +95,21 @@ export const processPDF = async (pdfData, fileName = '') => {
              * Retorne EXATAMENTE como aparece no PDF, mantendo pontos e formatação
              * Exemplos válidos: "57.611.495", "43.155.559", "43155559"
            - **Para DAE (Documento de Arrecadação Estadual) - REGRA PRIORITÁRIA**:
-             * SEMPRE procure o CNPJ COMPLETO (14 dígitos) no formato XX.XXX.XXX/XXXX-XX
+             * SEMPRE procure o CNPJ COMPLETO com 14 dígitos em QUALQUER FORMATO:
+               - Com formatação: "41.894.000/0001-60" ou "54.539.129/0001-00"
+               - SEM formatação (apenas números): "41894000000160" ou "51587654000102" ou "54539129000100"
              * Procure em TODA a página, especialmente:
-               - No meio do documento (geralmente aparece completo e visível)
+               - No meio do documento (geralmente aparece completo, com ou sem formatação)
                - Próximo ao nome da empresa
-               - No rodapé do documento
+               - No rodapé do documento (muitas vezes aparece sem formatação)
+               - Antes da linha "ATENÇÃO: PAGAMENTO COM PIX"
              * IGNORE completamente o "Número Documento" que aparece como "00.XXXXXXXXX-XX" (esse NÃO é CNPJ!)
-             * IGNORE CNPJs mascarados no cabeçalho (ex: "41.***.000/****-**")
-             * Exemplo: Se aparecer "41.894.000/0001-60" em qualquer lugar do documento, use esse
+             * IGNORE CNPJs mascarados no cabeçalho (ex: "41.***.000/****-**" ou "51.***.654/****-**")
+             * Exemplos válidos:
+               - "41.894.000/0001-60" (formatado) → use "41.894.000/0001-60"
+               - "51587654000102" (sem formatação, 14 dígitos) → formate como "51.587.654/0001-02"
+               - "54539129000100" (sem formatação, 14 dígitos) → formate como "54.539.129/0001-00"
+             * Se encontrar sequência de 14 dígitos que NÃO começa com "00." e está no corpo do documento, é o CNPJ!
              * Se não encontrar CNPJ completo e visível, retorne ""
            - **Para outros documentos**:
              * APENAS use CNPJs COMPLETOS e VISÍVEIS (14 dígitos)
@@ -198,16 +205,25 @@ export const processPDF = async (pdfData, fileName = '') => {
            - "123456789" (incompleto)
            - Qualquer número que não seja um CNPJ completo de 14 dígitos
 
-        9. EXEMPLO PRÁTICO - DAE (Documento de Arrecadação Estadual):
-           **Documento DAE contém:**
+        9. EXEMPLOS PRÁTICOS - DAE (Documento de Arrecadação Estadual):
+
+           **Exemplo 1 - DAE com CNPJ formatado:**
            - Cabeçalho: "CNPJ: 41.***.000/****-**" ← IGNORAR (mascarado)
            - Número Documento: "00.273497564-88" ← IGNORAR (não é CNPJ, tem 13 dígitos)
            - Meio do documento: "41.894.000/0001-60" ← USAR ESTE (CNPJ completo e visível)
+           Resposta: { "CNPJ_CLIENTE": "41.894.000/0001-60" }
 
-           **Resposta correta:**
-           {
-             "CNPJ_CLIENTE": "41.894.000/0001-60"
-           }
+           **Exemplo 2 - DAE com CNPJ SEM formatação:**
+           - Cabeçalho: "CNPJ: 51.***.654/****-**" ← IGNORAR (mascarado)
+           - Número Documento: "00.273374558-87" ← IGNORAR (não é CNPJ, tem 13 dígitos)
+           - Rodapé: "51587654000102" ← USAR ESTE (14 dígitos, é o CNPJ!)
+           Resposta: { "CNPJ_CLIENTE": "51.587.654/0001-02" } (formatado)
+
+           **Exemplo 3 - DAE com CNPJ SEM formatação:**
+           - Cabeçalho: "CNPJ: 54.***.129/****-**" ← IGNORAR (mascarado)
+           - Número Documento: "00.273427645-07" ← IGNORAR (não é CNPJ, tem 13 dígitos)
+           - Rodapé: "54539129000100" ← USAR ESTE (14 dígitos, é o CNPJ!)
+           Resposta: { "CNPJ_CLIENTE": "54.539.129/0001-00" } (formatado)
       `;
 
       const response = await axios.post(`${endpoint}?key=${apiKey}`, {
