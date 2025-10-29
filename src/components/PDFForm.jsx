@@ -549,7 +549,7 @@ const PDFForm = ({ fileData, onSubmit, onCancel }) => {
               <div className={`form-group doc-type ${missingFields.NOME_PDF ? 'missing' : ''}`}>
                 <label>Tipo de Documento:</label>
                 <div className="doc-type-options">
-                  {['DARF', 'FGTS', 'GPS', 'HOLERITE', 'NOTA FISCAL', 'PARCELAMENTO'].map(type => (
+                  {['DARF', 'FGTS', 'GPS', 'HOLERITE', 'NOTA FISCAL', 'PARCELAMENTO', 'RECIBO/parcela 13º SALÁRIO'].map(type => (
                     <button
                       key={type}
                       type="button"
@@ -584,7 +584,7 @@ const PDFForm = ({ fileData, onSubmit, onCancel }) => {
                   </div>
                 )}
                 
-                {formData.NOME_PDF && !['DARF', 'FGTS', 'GPS', 'HOLERITE', 'NOTA FISCAL', 'PARCELAMENTO'].includes(formData.NOME_PDF) && !showCustomInput && (
+                {formData.NOME_PDF && !['DARF', 'FGTS', 'GPS', 'HOLERITE', 'NOTA FISCAL', 'PARCELAMENTO', 'RECIBO/parcela 13º SALÁRIO'].includes(formData.NOME_PDF) && !showCustomInput && (
                   <div className="detected-type-info">
                     <p>Tipo detectado: <strong>{formData.NOME_PDF}</strong></p>
                     <button
