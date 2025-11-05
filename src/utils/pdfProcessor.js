@@ -55,7 +55,7 @@ export const processPDF = async (pdfData, fileName = '') => {
       
       // Enviar PDF diretamente para Gemini API
       console.log('🤖 Enviando PDF para Gemini 2.0 Flash...');
-      const apiKey = 'AIzaSyBNfyi-FvcFee3wbDB7OOkWqxVnMFd5Npg';
+      const apiKey = 'AIzaSyDDH2CMELlWqf2RRY5LkrHoY-QyZoYOEDs';
       const endpoint = 'https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent';
       
       const prompt = `
