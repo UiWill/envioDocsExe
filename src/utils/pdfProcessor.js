@@ -167,7 +167,7 @@ export const processPDF = async (pdfData, fileName = '') => {
            - ESOCIAL: Documento de Arrecadação do eSocial
            - ALVARA: Documento de Arrecadação Municipal (DAM)
            - FOLHA DE PAG: Recibo de pagamento/contracheque (contém "RECIBO DE PAGAMENTO DE CONTRIBUINTE INDIVIDUAL")
-           - RECIBO/parcela 13º SALÁRIO: Recibo de pagamento do 13º salário (contém "13º SALÁRIO" ou "13° SALÁRIO" ou "DECIMO TERCEIRO" ou "DÉCIMO TERCEIRO")
+           - RECIBO parcela 13º SALÁRIO: Recibo de pagamento do 13º salário (contém "13º SALÁRIO" ou "13° SALÁRIO" ou "DECIMO TERCEIRO" ou "DÉCIMO TERCEIRO")
            - FOLHA DE ADIANTAMENTO: Recibo de adiantamento de salário (contém "RECIBO DE ADIANTAMENTO DE SALÁRIO")
            - GPS: Guia da Previdência Social
         
