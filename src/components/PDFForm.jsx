@@ -343,28 +343,30 @@ const PDFForm = ({ fileData, onSubmit, onCancel }) => {
       return;
     }
     
-    // NOVA VALIDAÇÃO: Verificar data do documento
-    try {
-      const [day, month, year] = formData.DATA_ARQ.split('/').map(Number);
-      const documentDate = new Date(year, month - 1, day);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      // Formata as datas para exibição
-      const formatDate = (date) => {
-        const d = date.getDate().toString().padStart(2, '0');
-        const m = (date.getMonth() + 1).toString().padStart(2, '0');
-        const y = date.getFullYear();
-        return `${d}/${m}/${y}`;
-      };
-      
-      if (documentDate < today) {
-        setError(`⚠️ Data do documento (${formatDate(documentDate)}) é anterior à data atual (${formatDate(today)}). Por favor, verifique e corrija a data.`);
+    // NOVA VALIDAÇÃO: Verificar data do documento (exceto para 1 TAXA ENCERRAMENTO ANUAL que não tem vencimento)
+    if (formData.NOME_PDF !== '1 TAXA ENCERRAMENTO ANUAL') {
+      try {
+        const [day, month, year] = formData.DATA_ARQ.split('/').map(Number);
+        const documentDate = new Date(year, month - 1, day);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // Formata as datas para exibição
+        const formatDate = (date) => {
+          const d = date.getDate().toString().padStart(2, '0');
+          const m = (date.getMonth() + 1).toString().padStart(2, '0');
+          const y = date.getFullYear();
+          return `${d}/${m}/${y}`;
+        };
+
+        if (documentDate < today) {
+          setError(`⚠️ Data do documento (${formatDate(documentDate)}) é anterior à data atual (${formatDate(today)}). Por favor, verifique e corrija a data.`);
+          return;
+        }
+      } catch (error) {
+        setError('Data inválida. Use o formato DD/MM/YYYY.');
         return;
       }
-    } catch (error) {
-      setError('Data inválida. Use o formato DD/MM/YYYY.');
-      return;
     }
     
     if (!formData.VALOR_PFD) {
@@ -549,7 +551,7 @@ const PDFForm = ({ fileData, onSubmit, onCancel }) => {
               <div className={`form-group doc-type ${missingFields.NOME_PDF ? 'missing' : ''}`}>
                 <label>Tipo de Documento:</label>
                 <div className="doc-type-options">
-                  {['DARF', 'FGTS', 'GPS', 'HOLERITE', 'NOTA FISCAL', 'PARCELAMENTO', 'RECIBO parcela 13º SALÁRIO'].map(type => (
+                  {['DARF', 'FGTS', 'GPS', 'HOLERITE', 'NOTA FISCAL', 'PARCELAMENTO', 'RECIBO parcela 13  SALARIO', '1 TAXA ENCERRAMENTO ANUAL'].map(type => (
                     <button
                       key={type}
                       type="button"
@@ -584,7 +586,7 @@ const PDFForm = ({ fileData, onSubmit, onCancel }) => {
                   </div>
                 )}
                 
-                {formData.NOME_PDF && !['DARF', 'FGTS', 'GPS', 'HOLERITE', 'NOTA FISCAL', 'PARCELAMENTO', 'RECIBO parcela 13º SALÁRIO'].includes(formData.NOME_PDF) && !showCustomInput && (
+                {formData.NOME_PDF && !['DARF', 'FGTS', 'GPS', 'HOLERITE', 'NOTA FISCAL', 'PARCELAMENTO', 'RECIBO parcela 13  SALARIO', '1 TAXA ENCERRAMENTO ANUAL'].includes(formData.NOME_PDF) && !showCustomInput && (
                   <div className="detected-type-info">
                     <p>Tipo detectado: <strong>{formData.NOME_PDF}</strong></p>
                     <button
