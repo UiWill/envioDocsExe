@@ -78,7 +78,7 @@ export const processPDF = async (pdfData, fileName = '') => {
           "DATA_ARQ": string (data de vencimento no formato DD/MM/YYYY),
           "VALOR_PFD": string (valor total em formato numérico com ponto),
           "CNPJ_CLIENTE": string (CNPJ no formato XX.XXX.XXX/XXXX-XX),
-          "NOME_PDF": string (DARF, FGTS, DAE, PGDAS, ESOCIAL, 1 TAXA ENCERRAMENTO ANUAL, ALVARA, FOLHA DE PAG, RECIBO parcela 13  SALARIO, FOLHA DE ADIANTAMENTO, GPS, PARCELAMENTO_ICMS, PARCELAMENTO_INCS, PARCELAMENTO ou outros tipos específicos de parcelamento),
+          "NOME_PDF": string (DARF, FGTS, DAE, PGDAS, ESOCIAL, 2 TAXA, ALVARA, FOLHA DE PAG, RECIBO parcela 13  SALARIO, FOLHA DE ADIANTAMENTO, GPS, PARCELAMENTO_ICMS, PARCELAMENTO_INCS, PARCELAMENTO ou outros tipos específicos de parcelamento),
           "STATUS": "N"
         }
         
@@ -123,7 +123,7 @@ export const processPDF = async (pdfData, fileName = '') => {
              * Se aparecer apenas um número de documento que NÃO seja CNPJ, retorne ""
              * NUNCA use número de documento ou código de identificação como CNPJ
              * Mantenha a formatação XX.XXX.XXX/XXXX-XX para CNPJs completos
-           - **Para 1 TAXA ENCERRAMENTO ANUAL**: Se houver CNPJ válido (ex: "CNPJ/CPF: 27.894.767/0001-68"), use-o. Se só houver CPF, deixe ""
+           - **Para 2 TAXA**: Se houver CNPJ válido (ex: "CNPJ/CPF: 27.894.767/0001-68"), use-o. Se só houver CPF, deixe ""
            - Para folha de pagamento, use o CNPJ do empregador (se visível)
            - Para documentos fiscais, use o CNPJ do contribuinte/empresa (se visível)
         
@@ -142,14 +142,14 @@ export const processPDF = async (pdfData, fileName = '') => {
            - Arquivo "PARCELAMENTO SIMPLES.pdf" → retorne "PARCELAMENTO SIMPLES"
            - SEMPRE ignore palavras como "CAIU COMO DARF", "TESTE", "COPIA"
            
-           **REGRA 2 - 1 TAXA ENCERRAMENTO ANUAL (PRIORIDADE MUITO ALTA - USA CONTEÚDO DO DOCUMENTO):**
+           **REGRA 2 - 2 TAXA (PRIORIDADE MUITO ALTA - USA CONTEÚDO DO DOCUMENTO):**
            Se o documento é um BOLETO BANCÁRIO de escritório de contabilidade:
            - Contém "CONTABILIDADE" no beneficiário (ex: "AM CONTABILIDADE LTDA")
            - Tem "Boleto Pix" ou código de barras bancário
            - Tem campos típicos de boleto: "Nosso Número", "Agência", "Vencimento", "Valor do Documento"
            - Pagador/Sacado é uma EMPRESA DIFERENTE do beneficiário contabilidade
            - NÃO contém "Documento de Arrecadação" nem códigos de receita federal
-           - SEMPRE retorne "1 TAXA ENCERRAMENTO ANUAL"
+           - SEMPRE retorne "2 TAXA"
            
            **REGRA 3 - PGDAS (PRIORIDADE MUITO ALTA - USA CONTEÚDO DO DOCUMENTO):**
            Se o documento contém "Documento de Arrecadação do Simples Nacional" OU códigos "IRPJ - SIMPLES NACIONAL":
@@ -161,7 +161,7 @@ export const processPDF = async (pdfData, fileName = '') => {
            - SEMPRE retorne "DARF" (baseado no conteúdo, ignore o nome do arquivo)
            
            **OUTROS TIPOS:**
-           - 1 TAXA ENCERRAMENTO ANUAL: Boleto de honorários de escritório de contabilidade
+           - 2 TAXA: Boleto de honorários de escritório de contabilidade
            - FGTS: Guia de Recolhimento do FGTS ou GRF Digital
            - DAE: Documento de Arrecadação Estadual
            - ESOCIAL: Documento de Arrecadação do eSocial
@@ -172,7 +172,7 @@ export const processPDF = async (pdfData, fileName = '') => {
            - GPS: Guia da Previdência Social
         
         5. Para NOME_CLIENTE - INSTRUÇÕES ESPECÍFICAS POR TIPO:
-           - **Para 1 TAXA ENCERRAMENTO ANUAL/BOLETOS de contabilidade**: 
+           - **Para 2 TAXA/BOLETOS de contabilidade**:
              * SEMPRE busque a seção "Pagador" ou "Sacado" no documento
              * Use APENAS o nome da pessoa/empresa que está PAGANDO pelos serviços
              * IGNORE dados da contabilidade/beneficiário/sacador (ex: "AM CONTABILIDADE")
@@ -193,13 +193,13 @@ export const processPDF = async (pdfData, fileName = '') => {
         
         7. EXEMPLOS PRÁTICOS DE CLASSIFICAÇÃO:
 
-           **1 TAXA ENCERRAMENTO ANUAL vs DARF - COMO DISTINGUIR:**
-           - 1 TAXA ENCERRAMENTO ANUAL: Boleto bancário com beneficiário "CONTABILIDADE", pagador é cliente
+           **2 TAXA vs DARF - COMO DISTINGUIR:**
+           - 2 TAXA: Boleto bancário com beneficiário "CONTABILIDADE", pagador é cliente
            - DARF: Documento oficial com "Documento de Arrecadação de Receitas Federais"
 
-           **Exemplo 1 TAXA ENCERRAMENTO ANUAL:**
+           **Exemplo 2 TAXA:**
            Se vir: "AM CONTABILIDADE LTDA" como beneficiário + "Boleto Pix" + código de barras + "Pagador: EMPRESA X"
-           → SEMPRE retorne "1 TAXA ENCERRAMENTO ANUAL"
+           → SEMPRE retorne "2 TAXA"
            
            **Exemplo DARF:**
            Se vir: "Documento de Arrecadação de Receitas Federais" + código da receita
@@ -269,12 +269,8 @@ export const processPDF = async (pdfData, fileName = '') => {
 
       console.log('🎯 Dados extraídos pela IA:', extractedData);
 
-      // REGRA ESPECIAL: Se for 1 TAXA ENCERRAMENTO ANUAL, define data como 12/12/9999 (sem vencimento)
-      if (extractedData.NOME_PDF === '1 TAXA ENCERRAMENTO ANUAL') {
-        extractedData.DATA_ARQ = '12/12/9999';
-        console.log('✅ 1 TAXA ENCERRAMENTO ANUAL detectada - data definida como 12/12/9999 (sem vencimento)');
-      } else if (extractedData.DATA_ARQ) {
-        // Ajustar data para próximo dia útil se cair em fim de semana ou feriado (apenas para outros documentos)
+      // Ajustar data para próximo dia útil se cair em fim de semana ou feriado
+      if (extractedData.DATA_ARQ) {
         const dataOriginal = extractedData.DATA_ARQ;
         extractedData.DATA_ARQ = ajustarDataParaDiaUtil(dataOriginal);
 
@@ -318,13 +314,13 @@ export const processPDF = async (pdfData, fileName = '') => {
                          extractedData.VALOR_PFD && 
                          extractedData.NOME_PDF;
       
-      // REGRA CRÍTICA: CNPJ É OBRIGATÓRIO, EXCETO PARA 1 TAXA ENCERRAMENTO ANUAL
-      const isTaxaEncerramento = extractedData.NOME_PDF === '1 TAXA ENCERRAMENTO ANUAL';
+      // REGRA CRÍTICA: CNPJ É OBRIGATÓRIO, EXCETO PARA 2 TAXA
+      const isTaxaEncerramento = extractedData.NOME_PDF === '2 TAXA';
       const hasCNPJ = extractedData.CNPJ_CLIENTE && extractedData.CNPJ_CLIENTE.trim() !== '';
 
       // SUCESSO APENAS SE:
       // 1. Tem todos os dados principais E
-      // 2. Tem CNPJ OU é 1 TAXA ENCERRAMENTO ANUAL (que pode ter CPF)
+      // 2. Tem CNPJ OU é 2 TAXA (que pode ter CPF)
       const isSuccess = hasMainData && (hasCNPJ || isTaxaEncerramento);
       
       // Precisa de input manual se não atender os critérios de sucesso
