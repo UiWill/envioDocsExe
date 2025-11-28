@@ -49,16 +49,10 @@ export const processPDF = async (pdfData, fileName = '') => {
   const MAX_RETRIES = 10; // Aumentado para permitir testar todas as combinações de modelos e chaves
   const INITIAL_DELAY = 2000; // 2 segundos
 
-  // Reconstruir chaves API a partir de partes (ofuscação)
-  const buildKey = (part1, part2) => {
-    if (!part1 || !part2) return null;
-    return part1 + part2;
-  };
-
   // Lista de chaves API com fallback (usando variáveis de ambiente)
   const API_KEYS = [
-    buildKey(import.meta.env.VITE_GEMINI_KEY1_PART1, import.meta.env.VITE_GEMINI_KEY1_PART2),
-    buildKey(import.meta.env.VITE_GEMINI_KEY2_PART1, import.meta.env.VITE_GEMINI_KEY2_PART2)
+    import.meta.env.KEY,
+    import.meta.env.KEY2
   ].filter(key => key && key.trim() !== ''); // Remove chaves vazias ou inválidas
 
   // Validar se há chaves API configuradas
