@@ -46,7 +46,7 @@ export const saveNewDocumentType = async (typeName, keywords, sampleText) => {
 
 // Função principal para processar o PDF usando Gemini AI
 export const processPDF = async (pdfData, fileName = '') => {
-  const MAX_RETRIES = 3;
+  const MAX_RETRIES = 10; // Aumentado para permitir testar todas as combinações de modelos e chaves
   const INITIAL_DELAY = 2000; // 2 segundos
 
   // Lista de chaves API com fallback (usando variáveis de ambiente)
@@ -55,7 +55,15 @@ export const processPDF = async (pdfData, fileName = '') => {
     import.meta.env.VITE_GEMINI_API_KEY_2 || 'AIzaSyDlXvRLEzSGML_CUrIztXNcgKArh7z1s_s'  // Chave de backup
   ].filter(key => key); // Remove chaves vazias
 
+  // Lista de modelos para fallback (em ordem de preferência)
+  const MODELS = [
+    { name: 'gemini-2.0-flash-exp', label: 'Gemini 2.0 Flash Experimental' },
+    { name: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash' },
+    { name: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro' }
+  ];
+
   let currentKeyIndex = 0;
+  let currentModelIndex = 0;
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
@@ -63,8 +71,9 @@ export const processPDF = async (pdfData, fileName = '') => {
 
       // Enviar PDF diretamente para Gemini API
       const apiKey = API_KEYS[currentKeyIndex];
-      console.log(`🤖 Enviando PDF para Gemini 2.0 Flash... (usando chave ${currentKeyIndex + 1}/${API_KEYS.length})`);
-      const endpoint = 'https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent';
+      const model = MODELS[currentModelIndex];
+      console.log(`🤖 Enviando PDF para ${model.label}... (chave ${currentKeyIndex + 1}/${API_KEYS.length}, modelo ${currentModelIndex + 1}/${MODELS.length})`);
+      const endpoint = `https://generativelanguage.googleapis.com/v1/models/${model.name}:generateContent`;
       
       const prompt = `
         Você é um especialista em extração de dados de documentos fiscais brasileiros.
@@ -463,17 +472,25 @@ export const processPDF = async (pdfData, fileName = '') => {
     } catch (error) {
       console.error(`❌ Erro na tentativa ${attempt}:`, error.message);
 
-      // Se for erro 403 (Forbidden) - chave inválida/bloqueada
+      // Se for erro 403 (Forbidden) - modelo ou chave inválida/bloqueada
       if (error.response?.status === 403) {
-        console.log(`⚠️ API Key ${currentKeyIndex + 1} retornou erro 403 (Forbidden)`);
+        console.log(`⚠️ Modelo ${MODELS[currentModelIndex].label} com API Key ${currentKeyIndex + 1} retornou erro 403 (Forbidden)`);
 
-        // Se ainda há chaves de backup disponíveis
+        // Primeiro, tentar outro modelo com a mesma chave
+        if (currentModelIndex < MODELS.length - 1) {
+          currentModelIndex++;
+          console.log(`🔄 Tentando modelo alternativo ${MODELS[currentModelIndex].label}...`);
+          continue; // Tenta novamente com o próximo modelo
+        }
+
+        // Se esgotou os modelos, resetar e tentar próxima chave
         if (currentKeyIndex < API_KEYS.length - 1) {
+          currentModelIndex = 0; // Resetar para o primeiro modelo
           currentKeyIndex++;
-          console.log(`🔄 Tentando chave de backup ${currentKeyIndex + 1}/${API_KEYS.length}...`);
+          console.log(`🔄 Tentando chave de backup ${currentKeyIndex + 1}/${API_KEYS.length} com modelo ${MODELS[currentModelIndex].label}...`);
           continue; // Tenta novamente com a próxima chave
         } else {
-          console.error('❌ Todas as chaves API falharam com erro 403');
+          console.error('❌ Todas as combinações de modelos e chaves API falharam com erro 403');
           return {
             success: false,
             needsManualInput: true,
@@ -487,7 +504,7 @@ export const processPDF = async (pdfData, fileName = '') => {
               CNPJ_CURTO: '',
               STATUS: 'N'
             },
-            error: 'Todas as chaves da API Gemini estão bloqueadas ou inválidas. Verifique as configurações no Google Cloud Console.',
+            error: 'Todas as chaves e modelos da API Gemini estão bloqueados ou inválidos. Verifique as configurações no Google Cloud Console.',
             missingFields: {
               NOME_CLIENTE: true,
               DATA_ARQ: true,
