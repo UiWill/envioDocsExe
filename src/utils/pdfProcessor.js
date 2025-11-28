@@ -78,7 +78,7 @@ export const processPDF = async (pdfData, fileName = '') => {
           "DATA_ARQ": string (data de vencimento no formato DD/MM/YYYY),
           "VALOR_PFD": string (valor total em formato numérico com ponto),
           "CNPJ_CLIENTE": string (CNPJ no formato XX.XXX.XXX/XXXX-XX),
-          "NOME_PDF": string (DARF, FGTS, DAE, PGDAS, ESOCIAL, 2 TAXA ENCERRAMENTO ANUAL, ALVARA, FOLHA DE PAG, RECIBO parcela 13  SALARIO, FOLHA DE ADIANTAMENTO, GPS, PARCELAMENTO_ICMS, PARCELAMENTO_INCS, PARCELAMENTO ou outros tipos específicos de parcelamento),
+          "NOME_PDF": string (DARF, FGTS, DAE, PGDAS, ESOCIAL, HONORARIOS, ALVARA, FOLHA DE PAG, RECIBO parcela 13  SALARIO, FOLHA DE ADIANTAMENTO, GPS, PARCELAMENTO_ICMS, PARCELAMENTO_INCS, PARCELAMENTO ou outros tipos específicos de parcelamento),
           "STATUS": "N"
         }
         
@@ -123,7 +123,7 @@ export const processPDF = async (pdfData, fileName = '') => {
              * Se aparecer apenas um número de documento que NÃO seja CNPJ, retorne ""
              * NUNCA use número de documento ou código de identificação como CNPJ
              * Mantenha a formatação XX.XXX.XXX/XXXX-XX para CNPJs completos
-           - **Para 2 TAXA ENCERRAMENTO ANUAL**: Se houver CNPJ válido (ex: "CNPJ/CPF: 27.894.767/0001-68"), use-o. Se só houver CPF, deixe ""
+           - **Para HONORARIOS**: Se houver CNPJ válido (ex: "CNPJ/CPF: 27.894.767/0001-68"), use-o. Se só houver CPF, deixe ""
            - Para folha de pagamento, use o CNPJ do empregador (se visível)
            - Para documentos fiscais, use o CNPJ do contribuinte/empresa (se visível)
         
@@ -142,14 +142,14 @@ export const processPDF = async (pdfData, fileName = '') => {
            - Arquivo "PARCELAMENTO SIMPLES.pdf" → retorne "PARCELAMENTO SIMPLES"
            - SEMPRE ignore palavras como "CAIU COMO DARF", "TESTE", "COPIA"
            
-           **REGRA 2 - 2 TAXA ENCERRAMENTO ANUAL (PRIORIDADE MUITO ALTA - USA CONTEÚDO DO DOCUMENTO):**
+           **REGRA 2 - HONORARIOS (PRIORIDADE MUITO ALTA - USA CONTEÚDO DO DOCUMENTO):**
            Se o documento é um BOLETO BANCÁRIO de escritório de contabilidade:
            - Contém "CONTABILIDADE" no beneficiário (ex: "AM CONTABILIDADE LTDA")
            - Tem "Boleto Pix" ou código de barras bancário
            - Tem campos típicos de boleto: "Nosso Número", "Agência", "Vencimento", "Valor do Documento"
            - Pagador/Sacado é uma EMPRESA DIFERENTE do beneficiário contabilidade
            - NÃO contém "Documento de Arrecadação" nem códigos de receita federal
-           - SEMPRE retorne "2 TAXA ENCERRAMENTO ANUAL"
+           - SEMPRE retorne "HONORARIOS"
            
            **REGRA 3 - PGDAS (PRIORIDADE MUITO ALTA - USA CONTEÚDO DO DOCUMENTO):**
            Se o documento contém "Documento de Arrecadação do Simples Nacional" OU códigos "IRPJ - SIMPLES NACIONAL":
@@ -161,7 +161,7 @@ export const processPDF = async (pdfData, fileName = '') => {
            - SEMPRE retorne "DARF" (baseado no conteúdo, ignore o nome do arquivo)
            
            **OUTROS TIPOS:**
-           - 2 TAXA ENCERRAMENTO ANUAL: Boleto de honorários de escritório de contabilidade
+           - HONORARIOS: Boleto de honorários de escritório de contabilidade
            - FGTS: Guia de Recolhimento do FGTS ou GRF Digital
            - DAE: Documento de Arrecadação Estadual
            - ESOCIAL: Documento de Arrecadação do eSocial
@@ -172,7 +172,7 @@ export const processPDF = async (pdfData, fileName = '') => {
            - GPS: Guia da Previdência Social
         
         5. Para NOME_CLIENTE - INSTRUÇÕES ESPECÍFICAS POR TIPO:
-           - **Para 2 TAXA ENCERRAMENTO ANUAL/BOLETOS de contabilidade**:
+           - **Para HONORARIOS/BOLETOS de contabilidade**:
              * SEMPRE busque a seção "Pagador" ou "Sacado" no documento
              * Use APENAS o nome da pessoa/empresa que está PAGANDO pelos serviços
              * IGNORE dados da contabilidade/beneficiário/sacador (ex: "AM CONTABILIDADE")
@@ -193,13 +193,13 @@ export const processPDF = async (pdfData, fileName = '') => {
         
         7. EXEMPLOS PRÁTICOS DE CLASSIFICAÇÃO:
 
-           **2 TAXA ENCERRAMENTO ANUAL vs DARF - COMO DISTINGUIR:**
-           - 2 TAXA ENCERRAMENTO ANUAL: Boleto bancário com beneficiário "CONTABILIDADE", pagador é cliente
+           **HONORARIOS vs DARF - COMO DISTINGUIR:**
+           - HONORARIOS: Boleto bancário com beneficiário "CONTABILIDADE", pagador é cliente
            - DARF: Documento oficial com "Documento de Arrecadação de Receitas Federais"
 
-           **Exemplo 2 TAXA ENCERRAMENTO ANUAL:**
+           **Exemplo HONORARIOS:**
            Se vir: "AM CONTABILIDADE LTDA" como beneficiário + "Boleto Pix" + código de barras + "Pagador: EMPRESA X"
-           → SEMPRE retorne "2 TAXA ENCERRAMENTO ANUAL"
+           → SEMPRE retorne "HONORARIOS"
            
            **Exemplo DARF:**
            Se vir: "Documento de Arrecadação de Receitas Federais" + código da receita
@@ -314,14 +314,14 @@ export const processPDF = async (pdfData, fileName = '') => {
                          extractedData.VALOR_PFD && 
                          extractedData.NOME_PDF;
       
-      // REGRA CRÍTICA: CNPJ É OBRIGATÓRIO, EXCETO PARA 2 TAXA ENCERRAMENTO ANUAL
-      const isTaxaEncerramento = extractedData.NOME_PDF === '2 TAXA ENCERRAMENTO ANUAL';
+      // REGRA CRÍTICA: CNPJ É OBRIGATÓRIO, EXCETO PARA HONORARIOS
+      const isHonorarios = extractedData.NOME_PDF === 'HONORARIOS';
       const hasCNPJ = extractedData.CNPJ_CLIENTE && extractedData.CNPJ_CLIENTE.trim() !== '';
 
       // SUCESSO APENAS SE:
       // 1. Tem todos os dados principais E
-      // 2. Tem CNPJ OU é 2 TAXA (que pode ter CPF)
-      const isSuccess = hasMainData && (hasCNPJ || isTaxaEncerramento);
+      // 2. Tem CNPJ OU é HONORARIOS (que pode ter CPF)
+      const isSuccess = hasMainData && (hasCNPJ || isHonorarios);
       
       // Precisa de input manual se não atender os critérios de sucesso
       const needsManualInput = !isSuccess;
