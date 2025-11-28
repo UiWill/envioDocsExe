@@ -58,7 +58,9 @@ export const processPDF = async (pdfData, fileName = '') => {
   // Lista de modelos para fallback (em ordem de preferência)
   const MODELS = [
     { name: 'gemini-2.0-flash-exp', label: 'Gemini 2.0 Flash Experimental' },
+    { name: 'gemini-1.5-flash-latest', label: 'Gemini 1.5 Flash Latest' },
     { name: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash' },
+    { name: 'gemini-1.5-pro-latest', label: 'Gemini 1.5 Pro Latest' },
     { name: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro' }
   ];
 
@@ -472,9 +474,10 @@ export const processPDF = async (pdfData, fileName = '') => {
     } catch (error) {
       console.error(`❌ Erro na tentativa ${attempt}:`, error.message);
 
-      // Se for erro 403 (Forbidden) - modelo ou chave inválida/bloqueada
-      if (error.response?.status === 403) {
-        console.log(`⚠️ Modelo ${MODELS[currentModelIndex].label} com API Key ${currentKeyIndex + 1} retornou erro 403 (Forbidden)`);
+      // Se for erro 403 (Forbidden) ou 404 (Not Found) - modelo não existe ou chave inválida/bloqueada
+      if (error.response?.status === 403 || error.response?.status === 404) {
+        const errorMsg = error.response?.status === 404 ? 'modelo não encontrado' : 'acesso negado (Forbidden)';
+        console.log(`⚠️ Modelo ${MODELS[currentModelIndex].label} com API Key ${currentKeyIndex + 1} retornou erro ${error.response?.status} (${errorMsg})`);
 
         // Primeiro, tentar outro modelo com a mesma chave
         if (currentModelIndex < MODELS.length - 1) {
@@ -490,7 +493,7 @@ export const processPDF = async (pdfData, fileName = '') => {
           console.log(`🔄 Tentando chave de backup ${currentKeyIndex + 1}/${API_KEYS.length} com modelo ${MODELS[currentModelIndex].label}...`);
           continue; // Tenta novamente com a próxima chave
         } else {
-          console.error('❌ Todas as combinações de modelos e chaves API falharam com erro 403');
+          console.error(`❌ Todas as combinações de modelos e chaves API falharam com erro ${error.response?.status}`);
           return {
             success: false,
             needsManualInput: true,
@@ -504,7 +507,7 @@ export const processPDF = async (pdfData, fileName = '') => {
               CNPJ_CURTO: '',
               STATUS: 'N'
             },
-            error: 'Todas as chaves e modelos da API Gemini estão bloqueados ou inválidos. Verifique as configurações no Google Cloud Console.',
+            error: 'Todas as chaves e modelos da API Gemini estão bloqueados, inválidos ou não encontrados. Verifique as configurações no Google Cloud Console.',
             missingFields: {
               NOME_CLIENTE: true,
               DATA_ARQ: true,
