@@ -48,14 +48,22 @@ export const saveNewDocumentType = async (typeName, keywords, sampleText) => {
 export const processPDF = async (pdfData, fileName = '') => {
   const MAX_RETRIES = 3;
   const INITIAL_DELAY = 2000; // 2 segundos
-  
+
+  // Lista de chaves API com fallback
+  const API_KEYS = [
+    'AIzaSyDDH2CMELlWqf2RRY5LkrHoY-QyZoYOEDs', // Chave principal
+    'AIzaSyDlXvRLEzSGML_CUrIztXNcgKArh7z1s_s'  // Chave de backup
+  ];
+
+  let currentKeyIndex = 0;
+
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
       console.log(`🔄 Tentativa ${attempt}/${MAX_RETRIES} - Processamento do PDF via Gemini AI`);
-      
+
       // Enviar PDF diretamente para Gemini API
-      console.log('🤖 Enviando PDF para Gemini 2.0 Flash...');
-      const apiKey = 'AIzaSyDDH2CMELlWqf2RRY5LkrHoY-QyZoYOEDs';
+      const apiKey = API_KEYS[currentKeyIndex];
+      console.log(`🤖 Enviando PDF para Gemini 2.0 Flash... (usando chave ${currentKeyIndex + 1}/${API_KEYS.length})`);
       const endpoint = 'https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent';
       
       const prompt = `
@@ -454,7 +462,43 @@ export const processPDF = async (pdfData, fileName = '') => {
 
     } catch (error) {
       console.error(`❌ Erro na tentativa ${attempt}:`, error.message);
-      
+
+      // Se for erro 403 (Forbidden) - chave inválida/bloqueada
+      if (error.response?.status === 403) {
+        console.log(`⚠️ API Key ${currentKeyIndex + 1} retornou erro 403 (Forbidden)`);
+
+        // Se ainda há chaves de backup disponíveis
+        if (currentKeyIndex < API_KEYS.length - 1) {
+          currentKeyIndex++;
+          console.log(`🔄 Tentando chave de backup ${currentKeyIndex + 1}/${API_KEYS.length}...`);
+          continue; // Tenta novamente com a próxima chave
+        } else {
+          console.error('❌ Todas as chaves API falharam com erro 403');
+          return {
+            success: false,
+            needsManualInput: true,
+            data: {
+              HASH: SHA256(pdfData).toString(),
+              DATA_ARQ: '',
+              VALOR_PFD: '',
+              CNPJ_CLIENTE: '',
+              NOME_CLIENTE: '',
+              NOME_PDF: '',
+              CNPJ_CURTO: '',
+              STATUS: 'N'
+            },
+            error: 'Todas as chaves da API Gemini estão bloqueadas ou inválidas. Verifique as configurações no Google Cloud Console.',
+            missingFields: {
+              NOME_CLIENTE: true,
+              DATA_ARQ: true,
+              VALOR_PFD: true,
+              CNPJ_CLIENTE: true,
+              NOME_PDF: true
+            }
+          };
+        }
+      }
+
       // Se for erro 429 (rate limit) ou 503 (service unavailable) e não for a última tentativa
       if ((error.response?.status === 429 || error.response?.status === 503) && attempt < MAX_RETRIES) {
         const delay = INITIAL_DELAY * Math.pow(2, attempt - 1); // Backoff exponencial
@@ -463,7 +507,7 @@ export const processPDF = async (pdfData, fileName = '') => {
         await new Promise(resolve => setTimeout(resolve, delay));
         continue;
       }
-      
+
       // Se for a última tentativa ou outro tipo de erro, retornar erro
       console.error('❌ Todas as tentativas falharam. Erro no processamento via IA:', error);
       return {
