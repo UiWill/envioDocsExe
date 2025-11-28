@@ -62,7 +62,7 @@ export const processPDF = async (pdfData, fileName = '') => {
 
   // Lista de modelos para fallback (em ordem de preferência)
   const MODELS = [
-    { name: 'gemini-2.0-flash-thinking-exp-1219', label: 'Gemini 2.0 Flash Thinking' }
+    { name: 'gemini-2.0-flash-exp', label: 'Gemini 2.0 Flash Experimental' }
   ];
 
   let currentKeyIndex = 0;
