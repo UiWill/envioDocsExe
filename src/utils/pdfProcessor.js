@@ -49,11 +49,11 @@ export const processPDF = async (pdfData, fileName = '') => {
   const MAX_RETRIES = 3;
   const INITIAL_DELAY = 2000; // 2 segundos
 
-  // Lista de chaves API com fallback
+  // Lista de chaves API com fallback (usando variáveis de ambiente)
   const API_KEYS = [
-    'AIzaSyDDH2CMELlWqf2RRY5LkrHoY-QyZoYOEDs', // Chave principal
-    'AIzaSyDlXvRLEzSGML_CUrIztXNcgKArh7z1s_s'  // Chave de backup
-  ];
+    import.meta.env.VITE_GEMINI_API_KEY_1 || 'AIzaSyDDH2CMELlWqf2RRY5LkrHoY-QyZoYOEDs', // Chave principal
+    import.meta.env.VITE_GEMINI_API_KEY_2 || 'AIzaSyDlXvRLEzSGML_CUrIztXNcgKArh7z1s_s'  // Chave de backup
+  ].filter(key => key); // Remove chaves vazias
 
   let currentKeyIndex = 0;
 
@@ -337,7 +337,7 @@ export const processPDF = async (pdfData, fileName = '') => {
       console.log('🔍 VALIDAÇÃO CRÍTICA:');
       console.log('  - hasMainData:', hasMainData);
       console.log('  - hasCNPJ:', hasCNPJ);
-      console.log('  - isTaxaEncerramento:', isTaxaEncerramento);
+      console.log('  - isHonorarios:', isHonorarios);
       console.log('  - isSuccess:', isSuccess);
       console.log('  - needsManualInput:', needsManualInput);
       
@@ -435,7 +435,7 @@ export const processPDF = async (pdfData, fileName = '') => {
       }
       
       // Recalcular isSuccess e needsManualInput após a validação extra do DAE
-      const isSuccessUpdated = hasMainData && (hasCNPJUpdated || isTaxaEncerramento);
+      const isSuccessUpdated = hasMainData && (hasCNPJUpdated || isHonorarios);
       const needsManualInputUpdated = !isSuccessUpdated;
 
       // Preparar dados para salvar
