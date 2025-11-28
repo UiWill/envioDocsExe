@@ -31,6 +31,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Build
+        env:
+          VITE_GEMINI_KEY1_PART1: ${{ secrets.VITE_GEMINI_KEY1_PART1 }}
+          VITE_GEMINI_KEY1_PART2: ${{ secrets.VITE_GEMINI_KEY1_PART2 }}
+          VITE_GEMINI_KEY2_PART1: ${{ secrets.VITE_GEMINI_KEY2_PART1 }}
+          VITE_GEMINI_KEY2_PART2: ${{ secrets.VITE_GEMINI_KEY2_PART2 }}
         run: npm run build
       - name: Setup Pages
         uses: actions/configure-pages@v4
