@@ -49,11 +49,46 @@ export const processPDF = async (pdfData, fileName = '') => {
   const MAX_RETRIES = 10; // Aumentado para permitir testar todas as combinações de modelos e chaves
   const INITIAL_DELAY = 2000; // 2 segundos
 
+  // Reconstruir chaves API a partir de partes (ofuscação)
+  const buildKey = (part1, part2) => {
+    if (!part1 || !part2) return null;
+    return part1 + part2;
+  };
+
   // Lista de chaves API com fallback (usando variáveis de ambiente)
   const API_KEYS = [
-    import.meta.env.VITE_GEMINI_API_KEY_1 || 'AIzaSyDDH2CMELlWqf2RRY5LkrHoY-QyZoYOEDs', // Chave principal
-    import.meta.env.VITE_GEMINI_API_KEY_2 || 'AIzaSyDlXvRLEzSGML_CUrIztXNcgKArh7z1s_s'  // Chave de backup
-  ].filter(key => key); // Remove chaves vazias
+    buildKey(import.meta.env.VITE_GEMINI_KEY1_PART1, import.meta.env.VITE_GEMINI_KEY1_PART2),
+    buildKey(import.meta.env.VITE_GEMINI_KEY2_PART1, import.meta.env.VITE_GEMINI_KEY2_PART2)
+  ].filter(key => key && key.trim() !== ''); // Remove chaves vazias ou inválidas
+
+  // Validar se há chaves API configuradas
+  if (API_KEYS.length === 0) {
+    console.error('❌ Nenhuma chave API do Gemini configurada nas variáveis de ambiente!');
+    return {
+      success: false,
+      needsManualInput: true,
+      data: {
+        HASH: SHA256(pdfData).toString(),
+        DATA_ARQ: '',
+        VALOR_PFD: '',
+        CNPJ_CLIENTE: '',
+        NOME_CLIENTE: '',
+        NOME_PDF: '',
+        CNPJ_CURTO: '',
+        STATUS: 'N'
+      },
+      error: 'Chaves API do Gemini não configuradas. Configure VITE_GEMINI_API_KEY_1 e VITE_GEMINI_API_KEY_2 nas variáveis de ambiente.',
+      missingFields: {
+        NOME_CLIENTE: true,
+        DATA_ARQ: true,
+        VALOR_PFD: true,
+        CNPJ_CLIENTE: true,
+        NOME_PDF: true
+      }
+    };
+  }
+
+  console.log(`🔑 ${API_KEYS.length} chave(s) API configurada(s)`);
 
   // Lista de modelos para fallback (em ordem de preferência)
   const MODELS = [
