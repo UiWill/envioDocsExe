@@ -76,7 +76,7 @@ export const processPDF = async (pdfData, fileName = '') => {
       const apiKey = API_KEYS[currentKeyIndex];
       const model = MODELS[currentModelIndex];
       console.log(`🤖 Enviando PDF para ${model.label}... (chave ${currentKeyIndex + 1}/${API_KEYS.length}, modelo ${currentModelIndex + 1}/${MODELS.length})`);
-      const endpoint = `https://generativelanguage.googleapis.com/v1/models/${model.name}:generateContent`;
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model.name}:generateContent`;
       
       const prompt = `
         Você é um especialista em extração de dados de documentos fiscais brasileiros.
