@@ -32,8 +32,8 @@ jobs:
         run: npm ci
       - name: Build
         env:
-          KEY: ${{ secrets.KEY }}
-          KEY2: ${{ secrets.KEY2 }}
+          VITE_KEY: ${{ secrets.KEY }}
+          VITE_KEY2: ${{ secrets.KEY2 }}
         run: npm run build
       - name: Setup Pages
         uses: actions/configure-pages@v4

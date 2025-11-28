@@ -51,8 +51,8 @@ export const processPDF = async (pdfData, fileName = '') => {
 
   // Lista de chaves API com fallback (usando variáveis de ambiente)
   const API_KEYS = [
-    import.meta.env.KEY,
-    import.meta.env.KEY2
+    import.meta.env.VITE_KEY,
+    import.meta.env.VITE_KEY2
   ].filter(key => key && key.trim() !== ''); // Remove chaves vazias ou inválidas
 
   // Validar se há chaves API configuradas
