@@ -98,7 +98,7 @@ export const processPDF = async (pdfData, fileName = '') => {
           "DATA_ARQ": string (data de vencimento no formato DD/MM/YYYY),
           "VALOR_PFD": string (valor total em formato numérico com ponto),
           "CNPJ_CLIENTE": string (CNPJ no formato XX.XXX.XXX/XXXX-XX),
-          "NOME_PDF": string (DARF, FGTS, DAE, PGDAS, ESOCIAL, HONORARIOS, ALVARA, FOLHA DE PAG, RECIBO parcela 13  SALARIO, FOLHA DE ADIANTAMENTO, GPS, PARCELAMENTO_ICMS, PARCELAMENTO_INCS, PARCELAMENTO ou outros tipos específicos de parcelamento),
+          "NOME_PDF": string (DARF, FGTS, DAE, PGDAS, ESOCIAL, HONORARIOS, ALVARA, FOLHA DE PAGAMENTO, FOLHA DE ADIANTAMENTO, GPS, PARCELAMENTO_ICMS, PARCELAMENTO_INCS, PARCELAMENTO ou outros tipos específicos de parcelamento),
           "STATUS": "N"
         }
         
@@ -186,8 +186,7 @@ export const processPDF = async (pdfData, fileName = '') => {
            - DAE: Documento de Arrecadação Estadual
            - ESOCIAL: Documento de Arrecadação do eSocial
            - ALVARA: Documento de Arrecadação Municipal (DAM)
-           - FOLHA DE PAG: Recibo de pagamento/contracheque (contém "RECIBO DE PAGAMENTO DE CONTRIBUINTE INDIVIDUAL")
-           - RECIBO parcela 13  SALARIO: Recibo de pagamento do 13º salário (contém "13º SALÁRIO" ou "13° SALÁRIO" ou "DECIMO TERCEIRO" ou "DÉCIMO TERCEIRO")
+           - FOLHA DE PAGAMENTO: Recibo de pagamento/contracheque (contém "RECIBO DE PAGAMENTO DE CONTRIBUINTE INDIVIDUAL") OU recibo de pagamento do 13º salário (contém "13º SALÁRIO" ou "13° SALÁRIO" ou "DECIMO TERCEIRO" ou "DÉCIMO TERCEIRO")
            - FOLHA DE ADIANTAMENTO: Recibo de adiantamento de salário (contém "RECIBO DE ADIANTAMENTO DE SALÁRIO")
            - GPS: Guia da Previdência Social
         
