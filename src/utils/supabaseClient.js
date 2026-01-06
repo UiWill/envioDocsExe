@@ -1,9 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Credenciais do Supabase
-const supabaseUrl = 'https://osnjsgleardkzrnddlgt.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9zbmpzZ2xlYXJka3pybmRkbGd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjgzMTk3MTAsImV4cCI6MjA0Mzg5NTcxMH0.vsSkmzA6PGG09Kxsj1HAuHFhz-JxwimrtPCPV3E_aLg';
-const serviceRoleKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9zbmpzZ2xlYXJka3pybmRkbGd0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTcyODMxOTcxMCwiZXhwIjoyMDQzODk1NzEwfQ.rkabGlHPV4E9aefwyq9LYeXX-QxgfcleCQoqrZ-mgbM';
+const supabaseUrl = 'https://jplshxnojablvnxuddcg.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwbHNoeG5vamFibHZueHVkZGNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc1NTI0MDksImV4cCI6MjA4MzEyODQwOX0.KbPYmb6Xx61mGO4u5ZRdsHLlE0dFPKZHGJODlSFl968';
+const serviceRoleKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwbHNoeG5vamFibHZueHVkZGNnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NzU1MjQwOSwiZXhwIjoyMDgzMTI4NDA5fQ.C5lObeKiYl1PRUSiw00BJ0QEhmxgK4X7695NfC9LZD4';
 
 // Cliente público com configuração de auto-refresh
 export const supabase = createClient(supabaseUrl, supabaseKey, {
@@ -32,7 +32,7 @@ supabase.auth.onAuthStateChange((event, session) => {
 const clearInvalidSession = async () => {
   try {
     await supabase.auth.signOut({ scope: 'local' });
-    localStorage.removeItem('sb-osnjsgleardkzrnddlgt-auth-token');
+    localStorage.removeItem('sb-jplshxnojablvnxuddcg-auth-token');
     sessionStorage.clear();
     console.log('🧹 Sessão inválida limpa');
   } catch (error) {
@@ -231,11 +231,83 @@ export const documentosAPI = {
 
   // Inserir novo documento
   addDocumento: async (documentoData) => {
+    console.log('🚨 ADDDOCUMENTO - Iniciando inserção no banco de dados');
+    console.log('🚨 ADDDOCUMENTO - Dados a serem inseridos:', documentoData);
+    console.log('🚨 ADDDOCUMENTO - Campos presentes:', Object.keys(documentoData));
+    console.log('🚨 ADDDOCUMENTO - Valores dos campos principais:', {
+      NOME_CLIENTE: documentoData.NOME_CLIENTE,
+      CNPJ_CLIENTE: documentoData.CNPJ_CLIENTE,
+      CNPJ_CURTO: documentoData.CNPJ_CURTO,
+      DATA_ARQ: documentoData.DATA_ARQ,
+      VALOR_PFD: documentoData.VALOR_PFD,
+      NOME_PDF: documentoData.NOME_PDF,
+      STATUS: documentoData.STATUS,
+      URL_PDF: documentoData.URL_PDF ? 'presente' : 'ausente',
+      HASH: documentoData.HASH ? 'presente' : 'ausente'
+    });
+
+    // Tentar com cliente público primeiro
     const { data, error } = await supabase
       .from('AmContabilidade')
       .insert([documentoData])
       .select();
+
+    console.log('🚨 ADDDOCUMENTO - Resultado da inserção:', {
+      sucesso: !error,
+      temDados: !!data,
+      quantidadeRegistros: data?.length || 0
+    });
+
+    if (error) {
+      console.error('❌ ADDDOCUMENTO - Erro na inserção:', error);
+      console.error('❌ ADDDOCUMENTO - Código do erro:', error.code);
+      console.error('❌ ADDDOCUMENTO - Mensagem do erro:', error.message);
+      console.error('❌ ADDDOCUMENTO - Detalhes do erro:', error.details);
+      console.error('❌ ADDDOCUMENTO - Hint do erro:', error.hint);
+    } else if (data && data.length > 0) {
+      console.log('✅ ADDDOCUMENTO - Documento inserido com sucesso!');
+      console.log('✅ ADDDOCUMENTO - ID do documento inserido:', data[0].id);
+
+      // TESTE: Tentar buscar o documento recém-inserido para confirmar que está acessível
+      console.log('🔍 ADDDOCUMENTO - Testando busca do documento recém-inserido...');
+      const { data: testData, error: testError } = await supabase
+        .from('AmContabilidade')
+        .select('*')
+        .eq('id', data[0].id);
+
+      if (testError) {
+        console.error('❌ ADDDOCUMENTO - ERRO ao buscar documento recém-inserido:', testError);
+      } else if (testData && testData.length > 0) {
+        console.log('✅ ADDDOCUMENTO - Documento recém-inserido FOI ENCONTRADO na busca!', testData[0]);
+      } else {
+        console.warn('⚠️ ADDDOCUMENTO - Documento recém-inserido NÃO FOI ENCONTRADO na busca! Possível problema de RLS.');
+      }
+    } else {
+      console.warn('⚠️ ADDDOCUMENTO - Inserção sem erro mas sem dados retornados');
+    }
+
     return { documento: data?.[0], error };
+  },
+
+  // Buscar todos os documentos (para debug)
+  getAllDocumentos: async () => {
+    console.log('🔍 GETALLDOCUMENTOS - Buscando todos os documentos...');
+    const { data, error } = await supabase
+      .from('AmContabilidade')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    if (error) {
+      console.error('❌ GETALLDOCUMENTOS - Erro na busca:', error);
+    } else {
+      console.log('✅ GETALLDOCUMENTOS - Documentos encontrados:', data?.length || 0);
+      if (data && data.length > 0) {
+        console.log('📋 GETALLDOCUMENTOS - Primeiros documentos:', data);
+      }
+    }
+
+    return { data, error };
   },
 };
 

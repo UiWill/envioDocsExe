@@ -217,12 +217,17 @@ export const processFile = async (fileData) => {
         
         // Adiciona URL ao objeto de dados
         result.data.URL_PDF = url;
-        
+
+        console.log('🚨 FILEMANAGER - Dados completos antes de salvar no banco:', result.data);
+
         // Salva no banco de dados
         const { documento, error: dbError } = await documentosAPI.addDocumento(result.data);
-        
+
+        console.log('🚨 FILEMANAGER - Resultado da tentativa de salvamento:', { documento, dbError });
+
         if (dbError) {
-          console.error('Erro ao salvar documento no banco:', dbError);
+          console.error('❌ FILEMANAGER - Erro ao salvar documento no banco:', dbError);
+          console.error('❌ FILEMANAGER - Detalhes do erro:', JSON.stringify(dbError, null, 2));
           return {
             success: false,
             fileName: name,
@@ -233,7 +238,13 @@ export const processFile = async (fileData) => {
             data: result.data
           };
         }
-        
+
+        if (!documento) {
+          console.warn('⚠️ FILEMANAGER - Salvamento sem erro mas documento não retornado!');
+        } else {
+          console.log('✅ FILEMANAGER - Documento salvo com sucesso no banco!', documento);
+        }
+
         return {
           success: true,
           fileName: name,

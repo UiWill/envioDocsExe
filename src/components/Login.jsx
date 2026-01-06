@@ -25,11 +25,11 @@ const Login = ({ onLogin }) => {
     }
   };
 
-  // Função para formatar CNPJ
+  // Função para formatar CNPJ visualmente
   const formatCNPJ = (value) => {
     // Remove tudo que não é número
     const numbers = value.replace(/\D/g, '');
-    
+
     // Aplica a máscara XX.XXX.XXX/XXXX-XX
     if (numbers.length <= 2) return numbers;
     if (numbers.length <= 5) return numbers.replace(/(\d{2})(\d+)/, '$1.$2');
@@ -38,7 +38,7 @@ const Login = ({ onLogin }) => {
     return numbers.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d+)/, '$1.$2.$3/$4-$5');
   };
 
-  // Função para converter CNPJ em email
+  // Função para converter CNPJ em email (mantém formatação)
   const cnpjToEmail = (cnpj) => {
     return `${cnpj}@gmail.com`;
   };
@@ -56,14 +56,6 @@ const Login = ({ onLogin }) => {
 
     if (!cnpj || !password) {
       setError('Por favor, preencha todos os campos.');
-      setLoading(false);
-      return;
-    }
-
-    // Validação básica de CNPJ (14 dígitos)
-    const numbersOnly = cnpj.replace(/\D/g, '');
-    if (numbersOnly.length !== 14) {
-      setError('CNPJ deve conter 14 dígitos.');
       setLoading(false);
       return;
     }
