@@ -66,7 +66,7 @@ export const processPDF = async (pdfData, fileName = '') => {
     { name: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite' }
   ];
 
-  let currentKeyIndex = 0;
+  let currentKeyIndex = 0;s
   let currentModelIndex = 0;
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
